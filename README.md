@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Skypro Music
 
-## Getting Started
+Skypro Music — учебное музыкальное приложение, разработанное на Next.js и React. В проекте реализована главная страница музыкального сервиса с навигацией, списком треков, блоком фильтров, подборками плейлистов и нижним плеером.
 
-First, run the development server:
+## Описание проекта
+
+Приложение представляет собой интерфейс музыкального сервиса. Пользователь видит список треков, информацию об исполнителях, альбомах и длительности композиций. Также на странице отображаются тематические плейлисты и панель управления воспроизведением.
+
+Проект создан в учебных целях для отработки компонентного подхода, верстки интерфейса и работы с современным frontend-стеком.
+
+## Основной функционал
+
+- отображение главной страницы музыкального сервиса;
+- навигационное меню;
+- строка поиска;
+- блок фильтрации по исполнителю, году выпуска и жанру;
+- список музыкальных треков;
+- отображение подборок плейлистов;
+- нижняя панель музыкального плеера;
+- страницы авторизации и регистрации;
+- адаптация структуры проекта под Next.js App Router.
+
+## Технологии
+
+- Next.js;
+- React;
+- TypeScript;
+- CSS Modules;
+- ESLint;
+- npm.
+
+## Структура проекта
+
+```text
+skypro-music-main/
+├── app/                  # Страницы приложения и глобальные стили
+├── components/           # Переиспользуемые компоненты интерфейса
+│   ├── CenterBlock/      # Центральный блок со списком треков
+│   ├── Header/           # Навигационное меню
+│   ├── Layout/           # Основной layout страницы
+│   ├── Player/           # Нижний музыкальный плеер
+│   └── Sidebar/          # Боковая панель с плейлистами
+├── public/               # Изображения и статические файлы
+├── package.json          # Скрипты и зависимости проекта
+└── README.md             # Описание проекта
+```
+
+## Установка и запуск
+
+Перед запуском проекта должен быть установлен Node.js.
+
+Установите зависимости:
+
+```bash
+npm install
+```
+
+Запустите проект в режиме разработки:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+После запуска откройте сайт в браузере:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Доступные команды
 
-## Learn More
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Запуск проекта в режиме разработки.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Сборка проекта для production-режима.
 
-## Deploy on Vercel
+```bash
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Запуск production-сборки.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+```
+
+Проверка проекта линтером.
+
+## Примечание
+
+Проект является учебным frontend-приложением. Часть элементов интерфейса подготовлена как статическая верстка и может быть доработана: подключение API, полноценная авторизация, фильтрация, поиск и управление воспроизведением треков.

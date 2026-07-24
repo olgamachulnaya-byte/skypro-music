@@ -1,5 +1,5 @@
 import SearchBar from "./SearchBar";
-import Filter from "./Filter";
+import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import styles from "./CenterBlock.module.css";
 

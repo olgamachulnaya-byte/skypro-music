@@ -8,7 +8,7 @@ export interface Track {
   album: string;
   logo: string | null;
   track_file: string;
-  stared_user: unknown[];
+  stared_user: number[];
 }
 
 export const tracksData: Track[] = [

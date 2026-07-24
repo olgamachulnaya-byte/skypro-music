@@ -10,13 +10,18 @@ type FilterName = "author" | "year" | "genre";
 interface FilterConfig {
   name: FilterName;
   label: string;
-  options: string[];
+  options: readonly string[];
 }
 
-const uniqueAuthors = Array.from(new Set(tracksData.map((track) => track.author)));
-const uniqueGenres = Array.from(
-  new Set(tracksData.flatMap((track) => track.genre)),
-);
+function getUniqueOptions(values: readonly string[]): string[] {
+  return Array.from(new Set(values)).sort((firstValue, secondValue) =>
+    firstValue.localeCompare(secondValue, "ru"),
+  );
+}
+
+const uniqueAuthors = getUniqueOptions(tracksData.map((track) => track.author));
+const uniqueGenres = getUniqueOptions(tracksData.flatMap((track) => track.genre));
+
 
 const filters: FilterConfig[] = [
   { name: "author", label: "исполнителю", options: uniqueAuthors },
@@ -31,7 +36,7 @@ const filters: FilterConfig[] = [
 export default function Filter() {
   const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
 
-  const toggleFilter = (nameFilter: FilterName) => {
+  const toggleFilter = (nameFilter: FilterName): void => {
     setActiveFilter((currentFilter) =>
       currentFilter === nameFilter ? null : nameFilter,
     );
@@ -49,11 +54,16 @@ export default function Filter() {
             })}
             onClick={() => toggleFilter(name)}
             aria-expanded={activeFilter === name}
+            aria-controls={`${name}-filter-options`}
           >
             {label}
           </button>
           {activeFilter === name && (
-            <ul className={styles.filter__list} aria-label={`Фильтр по ${label}`}>
+            <ul
+              className={styles.filter__list}
+              id={`${name}-filter-options`}
+              aria-label={`Фильтр по ${label}`}
+            >
               {options.map((option) => (
                 <li className={styles.filter__item} key={option}>
                   {option}

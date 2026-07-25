@@ -1,8 +1,16 @@
 "use client";
 
-import { Provider } from "react-redux";
-import { store } from "./store";
+import { useMemo, useReducer } from "react";
+import { initialPlayerState, playerReducer } from "./features/playerSlice";
+import { PlayerStoreContext } from "./store";
 
 export default function ReduxProvider({ children }: { children: React.ReactNode }) {
-  return <Provider store={store}>{children}</Provider>;
+ const [player, dispatch] = useReducer(playerReducer, initialPlayerState);
+  const value = useMemo(() => ({ state: { player }, dispatch }), [player]);
+
+  return (
+    <PlayerStoreContext.Provider value={value}>
+      {children}
+    </PlayerStoreContext.Provider>
+  );
 }

@@ -1,28 +1,37 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Track } from "../../../data"; 
+import type { Track } from "../../../data";
 
-interface PlayerState {
+export interface PlayerState {
   currentTrack: Track | null;
   isPlaying: boolean;
 }
 
-const initialState: PlayerState = {
+export const initialPlayerState: PlayerState = {
   currentTrack: null,
   isPlaying: false,
 };
 
-const playerSlice = createSlice({
-  name: "player",
-  initialState,
-  reducers: {
-    setCurrentTrack: (state, action: PayloadAction<Track>) => {
-      state.currentTrack = action.payload;
-    },
-    setIsPlaying: (state, action: PayloadAction<boolean>) => {
-      state.isPlaying = action.payload;
-    },
-  },
+export type PlayerAction =
+  | { type: "player/setCurrentTrack"; payload: Track }
+  | { type: "player/setIsPlaying"; payload: boolean };
+
+export const setCurrentTrack = (track: Track): PlayerAction => ({
+  type: "player/setCurrentTrack",
+  payload: track,
 });
 
-export const { setCurrentTrack, setIsPlaying } = playerSlice.actions;
-export const playerReducer = playerSlice.reducer;
+export const setIsPlaying = (isPlaying: boolean): PlayerAction => ({
+  type: "player/setIsPlaying",
+  payload: isPlaying,
+});
+
+export function playerReducer(
+  state: PlayerState,
+  action: PlayerAction,
+): PlayerState {
+  switch (action.type) {
+    case "player/setCurrentTrack":
+      return { ...state, currentTrack: action.payload };
+    case "player/setIsPlaying":
+      return { ...state, isPlaying: action.payload };
+  }
+}

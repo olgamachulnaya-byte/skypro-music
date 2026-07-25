@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import type { Track } from "@/data";
+import { setCurrentTrack, setIsPlaying } from "@/components/store/features/playerSlice";
+import { useAppDispatch, useAppSelector } from "@/components/store/store";
 import styles from "./TrackItem.module.css";
 
 interface TrackItemProps {
@@ -14,14 +18,35 @@ function formatDuration(durationInSeconds: number): string {
 }
 
 export default function TrackItem({ track }: TrackItemProps) {
+const dispatch = useAppDispatch();
+  const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
+  const isCurrent = currentTrack?._id === track._id;
+
+  const selectTrack = () => {
+    if (isCurrent) {
+      dispatch(setIsPlaying(!isPlaying));
+      return;
+    }
+
+    dispatch(setCurrentTrack(track));
+    dispatch(setIsPlaying(true));
+  };
+
   return (
-    <div className={styles.playlist__item}>
+    <div className={styles.playlist__item} onClick={selectTrack}>
       <div className={styles.playlist__track}>
         <div className={styles.track__title}>
           <div className={styles.track__titleImage}>
-            <svg className={styles.track__titleSvg}>
-              <use xlinkHref="/img/icon/sprite.svg#icon-note"></use>
-            </svg>
+             {isCurrent ? (
+              <span
+                className={`${styles.track__playingDot} ${isPlaying ? styles.track__playingDotActive : ""}`}
+                aria-label={isPlaying ? "Трек воспроизводится" : "Трек на паузе"}
+              />
+            ) : (
+              <svg className={styles.track__titleSvg}>
+                <use href="/img/icon/sprite.svg#icon-note" />
+              </svg>
+            )}
           </div>
           <div className={styles.track__titleText}>
             <Link href="#" className={styles.track__titleLink}>

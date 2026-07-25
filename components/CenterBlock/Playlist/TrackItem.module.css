@@ -2,6 +2,23 @@
   width: 100%;
   display: block;
   margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.track__playingDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ad61ff;
+}
+
+.track__playingDotActive {
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(0.75); opacity: 0.65; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .playlist__track {

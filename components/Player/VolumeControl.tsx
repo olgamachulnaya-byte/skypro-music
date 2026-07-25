@@ -1,6 +1,11 @@
 import styles from "./VolumeControl.module.css";
 
-export default function VolumeControl() {
+interface VolumeControlProps {
+  volume: number;
+  onVolumeChange: (volume: number) => void;
+}
+
+export default function VolumeControl({ volume, onVolumeChange }: VolumeControlProps) {
   return (
     <div className={styles.volume__content}>
       <div className={styles.volume__image}>
@@ -12,7 +17,12 @@ export default function VolumeControl() {
         <input
           className={`${styles.volume__progressLine} ${styles.btn}`}
           type="range"
-          name="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          aria-label="Громкость"
+          onChange={(event) => onVolumeChange(Number(event.target.value))}
         />
       </div>
     </div>

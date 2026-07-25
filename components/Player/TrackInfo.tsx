@@ -1,7 +1,8 @@
 import Link from "next/link";
 import styles from "./TrackInfo.module.css";
+import type { Track } from "@/data";
 
-export default function TrackInfo() {
+export default function TrackInfo({ track }: { track: Track }) {
   return (
     <div className={styles.player__trackPlay}>
       <div className={styles.trackPlay__contain}>
@@ -12,12 +13,12 @@ export default function TrackInfo() {
         </div>
         <div className={styles.trackPlay__author}>
           <Link href="#" className={styles.trackPlay__authorLink}>
-            Ты та...
+            {track.name}
           </Link>
         </div>
         <div className={styles.trackPlay__album}>
           <Link href="#" className={styles.trackPlay__albumLink}>
-            Баста
+            {track.author}
           </Link>
         </div>
       </div>

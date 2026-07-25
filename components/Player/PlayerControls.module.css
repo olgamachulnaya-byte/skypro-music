@@ -25,6 +25,9 @@
 
 .player__btnPlay {
   margin-right: 23px;
+  border: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .player__btnPlaySvg {

@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { tracksData } from "@/data";
 import PlayerControls from "./PlayerControls";
 import TrackInfo from "./TrackInfo";
 import VolumeControl from "./VolumeControl";
 import styles from "./Player.module.css";
-import { setIsPlaying } from "@/components/store/features/playerSlice";
+import {
+  setCurrentTrack,
+  setIsPlaying,
+} from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
 
 export default function Player() {
@@ -15,6 +19,7 @@ export default function Player() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [isLooping, setIsLooping] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -27,13 +32,32 @@ export default function Player() {
     }
   }, [currentTrack, dispatch, isPlaying]);
 
-  useEffect(() => {
-    setCurrentTime(0);
-    setDuration(currentTrack?.duration_in_seconds ?? 0);
-  }, [currentTrack]);
-
   const togglePlaying = () => {
     if (currentTrack) dispatch(setIsPlaying(!isPlaying));
+  };
+
+  const selectAdjacentTrack = (direction: -1 | 1) => {
+    const currentIndex = tracksData.findIndex(
+      (track) => track._id === currentTrack?._id,
+    );
+    const nextIndex =
+      (currentIndex + direction + tracksData.length) % tracksData.length;
+
+    dispatch(setCurrentTrack(tracksData[nextIndex]));
+    dispatch(setIsPlaying(true));
+  };
+
+  const selectRandomTrack = () => {
+    if (tracksData.length < 2) return;
+
+    const availableTracks = tracksData.filter(
+      (track) => track._id !== currentTrack?._id,
+    );
+    const randomTrack =
+      availableTracks[Math.floor(Math.random() * availableTracks.length)];
+
+    dispatch(setCurrentTrack(randomTrack));
+    dispatch(setIsPlaying(true));
   };
 
   const seek = (value: number) => {
@@ -50,12 +74,18 @@ export default function Player() {
 
   return (
     <div className={styles.bar}>
-        <audio
+      <audio
         ref={audioRef}
+        key={currentTrack._id}
         src={currentTrack.track_file}
+        loop={isLooping}
+        onLoadStart={() => {
+          setCurrentTime(0);
+          setDuration(currentTrack.duration_in_seconds);
+        }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
-        onEnded={() => dispatch(setIsPlaying(false))}
+        onEnded={() => selectAdjacentTrack(1)}
       />
       <div className={styles.bar__content}>
         <input
@@ -70,11 +100,19 @@ export default function Player() {
         />
         <div className={styles.bar__playerBlock}>
           <div className={styles.bar__player}>
-             <PlayerControls isPlaying={isPlaying} onTogglePlaying={togglePlaying} />
+            <PlayerControls
+              isPlaying={isPlaying}
+              isLooping={isLooping}
+              onTogglePlaying={togglePlaying}
+              onPrevious={() => selectAdjacentTrack(-1)}
+              onNext={() => selectAdjacentTrack(1)}
+              onToggleLoop={() => setIsLooping((value) => !value)}
+              onShuffle={selectRandomTrack}
+            />
             <TrackInfo track={currentTrack} />
           </div>
           <div className={styles.bar__volumeBlock}>
-             <VolumeControl volume={volume} onVolumeChange={changeVolume} />
+            <VolumeControl volume={volume} onVolumeChange={changeVolume} />
           </div>
         </div>
       </div>

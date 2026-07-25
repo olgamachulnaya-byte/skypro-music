@@ -12,6 +12,10 @@
   padding: 5px;
   display: flex;
   align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
 .player__btnPrev {
@@ -85,6 +89,11 @@
   fill: transparent;
   stroke: #ffffff;
   cursor: pointer;
+}
+
+.btnIconActive svg {
+  fill: transparent;
+  stroke: #ffffff;
 }
 
 .btnIcon:active .trackPlay__likeSvg,

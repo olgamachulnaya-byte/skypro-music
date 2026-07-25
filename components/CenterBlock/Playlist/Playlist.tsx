@@ -1,18 +1,35 @@
-import TrackItem from "./TrackItem";
-import PlaylistHeader from "./PlaylistHeader";
-import { tracksData } from "@/data";
-import styles from "./Playlist.module.css";
-
-export default function Playlist() {
-
-  return (
-    <div className={styles.centerblock__content}>
-      <PlaylistHeader />
-      <div className={styles.content__playlist}>
-        {tracksData.map((track) => (
-          <TrackItem key={track._id} track={track} />
-        ))}
-      </div>
-    </div>
-  );
- }
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}

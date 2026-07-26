@@ -23,7 +23,7 @@ export default function PlayerControls({
   onPrevious,
   onNext,
   onToggleLoop,
-  oonToggleShuffle,
+  onToggleShuffle,
 }: PlayerControlsProps) {
   return (
     <div className={styles.player__controls}>

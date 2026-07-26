@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import styles from "./VolumeControl.module.css";
 
 interface VolumeControlProps {
@@ -22,6 +23,7 @@ export default function VolumeControl({ volume, onVolumeChange }: VolumeControlP
           step="0.01"
           value={volume}
           aria-label="Громкость"
+          style={{ "--volume": `${volume * 100}%` } as CSSProperties}
           onChange={(event) => onVolumeChange(Number(event.target.value))}
         />
       </div>

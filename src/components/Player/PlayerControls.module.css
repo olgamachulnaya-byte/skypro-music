@@ -75,6 +75,11 @@
   stroke: #696969;
 }
 
+.player__controls button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
 .btn {
   cursor: pointer;
 }

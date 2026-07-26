@@ -3,21 +3,27 @@ import styles from "./PlayerControls.module.css";
 interface PlayerControlsProps {
   isPlaying: boolean;
   isLooping: boolean;
+  isShuffling: boolean;
+  canGoPrevious: boolean;
+  canGoNext: boolean;
   onTogglePlaying: () => void;
   onPrevious: () => void;
   onNext: () => void;
   onToggleLoop: () => void;
-  onShuffle: () => void;
+  onToggleShuffle: () => void;
 }
 
 export default function PlayerControls({
   isPlaying,
   isLooping,
+  isShuffling,
+  canGoPrevious,
+  canGoNext,
   onTogglePlaying,
   onPrevious,
   onNext,
   onToggleLoop,
-  onShuffle,
+  oonToggleShuffle,
 }: PlayerControlsProps) {
   return (
     <div className={styles.player__controls}>
@@ -25,6 +31,7 @@ export default function PlayerControls({
         className={styles.player__btnPrev}
         type="button"
         aria-label="Предыдущий трек"
+        disabled={!canGoPrevious}
         onClick={onPrevious}
       >
         <svg className={styles.player__btnPrevSvg}>
@@ -45,6 +52,7 @@ export default function PlayerControls({
         className={styles.player__btnNext}
         type="button"
         aria-label="Следующий трек"
+        disabled={!canGoNext}
         onClick={onNext}
       >
         <svg className={styles.player__btnNextSvg}>
@@ -63,10 +71,11 @@ export default function PlayerControls({
         </svg>
       </button>
       <button
-        className={`${styles.player__btnShuffle} ${styles.btnIcon}`}
+        className={`${styles.player__btnShuffle} ${styles.btnIcon} ${isShuffling ? styles.btnIconActive : ""}`}
         type="button"
-        aria-label="Случайный трек"
-        onClick={onShuffle}
+        aria-label={isShuffling ? "Отключить перемешивание" : "Перемешать треки"}
+        aria-pressed={isShuffling}
+        onClick={onToggleShuffle}
       >
         <svg className={styles.player__btnShuffleSvg}>
           <use href="/img/icon/sprite.svg#icon-shuffle" />

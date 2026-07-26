@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { Track } from "@/data";
+import { tracksData, type Track } from "@/data";
 import {
   setCurrentTrack,
+  setCurrentPlaylist,
   setIsPlaying,
 } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
@@ -32,6 +33,7 @@ export default function TrackItem({ track }: TrackItemProps) {
     }
 
     dispatch(setCurrentTrack(track));
+    dispatch(setCurrentPlaylist(tracksData));
     dispatch(setIsPlaying(true));
   };
 

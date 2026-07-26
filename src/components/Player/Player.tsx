@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { tracksData } from "@/data";
+import type { Track } from "@/data";
 import PlayerControls from "./PlayerControls";
 import TrackInfo from "./TrackInfo";
 import VolumeControl from "./VolumeControl";
@@ -16,13 +16,24 @@ import { useAppDispatch, useAppSelector } from "@/components/store/store";
 export default function Player() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const dispatch = useAppDispatch();
-  const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
+  const { currentTrack, currentPlaylist, isPlaying } = useAppSelector(
+    (state) => state.player,
+  );
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isLooping, setIsLooping] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffledPlaylist, setShuffledPlaylist] = useState<Track[]>([]);
 
- const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const activePlaylist = isShuffling ? shuffledPlaylist : currentPlaylist;
+  const currentIndex = useMemo(
+    () => activePlaylist.findIndex((track) => track._id === currentTrack?._id),
+    [activePlaylist, currentTrack?._id],
+  );
+  const canGoPrevious = currentIndex > 0;
+  const canGoNext = currentIndex >= 0 && currentIndex < activePlaylist.length - 1;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -35,36 +46,47 @@ export default function Player() {
     }
   }, [currentTrack, dispatch, isPlaying]);
 
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [currentTrack, volume]);
+
   const togglePlaying = () => {
     if (currentTrack) dispatch(setIsPlaying(!isPlaying));
   };
 
   const selectAdjacentTrack = (direction: -1 | 1) => {
-    const currentIndex = tracksData.findIndex(
-      (track) => track._id === currentTrack?._id,
-    );
-    const nextIndex =
-      (currentIndex + direction + tracksData.length) % tracksData.length;
+    const nextTrack = activePlaylist[currentIndex + direction];
+    if (!nextTrack) return false;
 
-    dispatch(setCurrentTrack(tracksData[nextIndex]));
+    dispatch(setCurrentTrack(nextTrack));
     dispatch(setIsPlaying(true));
+    return true;
   };
 
-  const selectRandomTrack = () => {
-    if (tracksData.length < 2) return;
+  const toggleShuffle = () => {
+    if (isShuffling) {
+      setIsShuffling(false);
+      setShuffledPlaylist([]);
+      return;
+    }
 
-    const availableTracks = tracksData.filter(
+   const remainingTracks = currentPlaylist.filter(
       (track) => track._id !== currentTrack?._id,
     );
-    const randomTrack =
-      availableTracks[Math.floor(Math.random() * availableTracks.length)];
 
-    dispatch(setCurrentTrack(randomTrack));
-    dispatch(setIsPlaying(true));
+    for (let index = remainingTracks.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [remainingTracks[index], remainingTracks[randomIndex]] = [
+        remainingTracks[randomIndex],
+        remainingTracks[index],
+      ];
+    }
+
+    setShuffledPlaylist(currentTrack ? [currentTrack, ...remainingTracks] : remainingTracks);
+    setIsShuffling(true);
   };
 
   const seek = (value: number) => {
-    if (audioRef.current) audioRef.current.currentTime = value;
     setCurrentTime(value);
   };
 
@@ -75,6 +97,10 @@ export default function Player() {
 
   const syncPlayingState = (playing: boolean) => {
     if (playing !== isPlaying) dispatch(setIsPlaying(playing));
+  };
+
+  const handleEnded = () => {
+    if (!selectAdjacentTrack(1)) dispatch(setIsPlaying(false));
   };
 
   if (!currentTrack) return null;
@@ -95,7 +121,7 @@ export default function Player() {
         onPlay={() => syncPlayingState(true)}
         onPause={() => syncPlayingState(false)}
         onError={() => syncPlayingState(false)}
-        onEnded={() => selectAdjacentTrack(1)}
+        onEnded={handleEnded}
       />
       <div className={styles.bar__content}>
         <div className={styles.bar__time} aria-live="off">
@@ -107,7 +133,7 @@ export default function Player() {
           min="0"
           max={duration || currentTrack.duration_in_seconds}
           step="0.1"
-          value={currentTime}
+          value={Math.min(currentTime, duration || currentTrack.duration_in_seconds)}
           aria-label="Позиция воспроизведения"
           style={{ "--progress": `${progress}%` } as CSSProperties}
           onChange={(event) => seek(Number(event.target.value))}
@@ -117,11 +143,14 @@ export default function Player() {
             <PlayerControls
               isPlaying={isPlaying}
               isLooping={isLooping}
+              isShuffling={isShuffling}
+              canGoPrevious={canGoPrevious}
+              canGoNext={canGoNext}
               onTogglePlaying={togglePlaying}
               onPrevious={() => selectAdjacentTrack(-1)}
               onNext={() => selectAdjacentTrack(1)}
               onToggleLoop={() => setIsLooping((value) => !value)}
-              onShuffle={selectRandomTrack}
+              onToggleShuffle={toggleShuffle}
             />
             <TrackInfo track={currentTrack} />
           </div>

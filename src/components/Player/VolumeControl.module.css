@@ -27,7 +27,13 @@
   width: 100%;
   height: 2px;
   appearance: none;
-  background: #797979;
+  background: linear-gradient(
+    to right,
+    #ffffff 0,
+    #ffffff var(--volume),
+    #797979 var(--volume),
+    #797979 100%
+  );
   border-radius: 5px;
   outline: none;
   cursor: pointer;
@@ -35,7 +41,7 @@
 
 .volume__progressLine::-webkit-slider-runnable-track {
   height: 2px;
-  background: #797979;
+  background: transparent;
   border-radius: 5px;
 }
 

@@ -1,4 +1,4 @@
-import SidebarItem from "./SidebarItem";
+import SidebarItem from "./SidebarItem/SidebarItem";
 import styles from "./Sidebar.module.css";
 
 export default function Sidebar() {

@@ -84,21 +84,21 @@
   cursor: pointer;
 }
 
-.btnIcon:hover svg {
-  fill: transparent;
-  stroke: #acacac;
+.btnIcon:hover svg path {
+  fill: #acacac;
   cursor: pointer;
 }
 
-.btnIcon:active svg {
-  fill: transparent;
-  stroke: #ffffff;
+.btnIcon:active svg path {
+  fill: #ffffff;
   cursor: pointer;
+}
+
+.btnIconActive svg path {
+  fill: #ffffff;
 }
 
 .btnIconActive svg {
-  fill: transparent;
-  stroke: #ffffff;
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
 }
 

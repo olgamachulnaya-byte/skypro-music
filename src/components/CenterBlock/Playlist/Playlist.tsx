@@ -1,5 +1,5 @@
-import TrackItem from "./TrackItem";
-import PlaylistHeader from "./PlaylistHeader";
+import TrackItem from "./TrackItem/TrackItem";
+import PlaylistHeader from "./PlaylistHeader/PlaylistHeader";
 import { tracksData } from "@/data";
 import styles from "./Playlist.module.css";
 

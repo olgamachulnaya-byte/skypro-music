@@ -1,4 +1,4 @@
-import SearchBar from "./SearchBar";
+import SearchBar from "./SearchBar/SearchBar";
 import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import styles from "./CenterBlock.module.css";

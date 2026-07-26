@@ -11,7 +11,7 @@ export default function VolumeControl({ volume, onVolumeChange }: VolumeControlP
     <div className={styles.volume__content}>
       <div className={styles.volume__image}>
         <svg className={styles.volume__svg}>
-          <use xlinkHref="/img/icon/sprite.svg#icon-volume"></use>
+          <use href="/img/icon/sprite.svg#icon-volume" />
         </svg>
       </div>
       <div className={`${styles.volume__progress} ${styles.btn}`}>

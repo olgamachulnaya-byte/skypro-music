@@ -8,7 +8,7 @@ export default function TrackInfo({ track }: { track: Track }) {
       <div className={styles.trackPlay__contain}>
         <div className={styles.trackPlay__image}>
           <svg className={styles.trackPlay__svg}>
-            <use xlinkHref="/img/icon/sprite.svg#icon-note"></use>
+          <use href="/img/icon/sprite.svg#icon-note" />
           </svg>
         </div>
         <div className={styles.trackPlay__author}>
@@ -25,12 +25,12 @@ export default function TrackInfo({ track }: { track: Track }) {
       <div className={styles.trackPlay__actions}>
         <div className={`${styles.trackPlay__like} ${styles.btnIcon}`}>
           <svg className={styles.trackPlay__likeSvg}>
-            <use xlinkHref="/img/icon/sprite.svg#icon-like"></use>
+            <use href="/img/icon/sprite.svg#icon-like" />
           </svg>
         </div>
         <div className={`${styles.trackPlay__dislike} ${styles.btnIcon}`}>
           <svg className={styles.trackPlay__dislikeSvg}>
-            <use xlinkHref="/img/icon/sprite.svg#icon-dislike"></use>
+            <use href="/img/icon/sprite.svg#icon-dislike" />
           </svg>
         </div>
       </div>

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Track } from "@/data";
-import PlayerControls from "./PlayerControls";
-import TrackInfo from "./TrackInfo";
-import VolumeControl from "./VolumeControl";
+import PlayerControls from "./PlayerControls/PlayerControls";
+import TrackInfo from "./TrackInfo/TrackInfo";
+import VolumeControl from "./VolumeControl/VolumeControl";
 import styles from "./Player.module.css";
 import {
   setCurrentTrack,
@@ -40,7 +40,13 @@ export default function Player() {
     if (!audio || !currentTrack) return;
 
     if (isPlaying) {
-      void audio.play().catch(() => dispatch(setIsPlaying(false)));
+      void audio.play().catch((error: unknown) => {
+        // Changing tracks can abort an earlier play request. That is expected and
+        // must not pause the newly selected track.
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          dispatch(setIsPlaying(false));
+        }
+      });
     } else {
       audio.pause();
     }
@@ -70,7 +76,7 @@ export default function Player() {
       return;
     }
 
-   const remainingTracks = currentPlaylist.filter(
+    const remainingTracks = currentPlaylist.filter(
       (track) => track._id !== currentTrack?._id,
     );
 
@@ -82,11 +88,14 @@ export default function Player() {
       ];
     }
 
-    setShuffledPlaylist(currentTrack ? [currentTrack, ...remainingTracks] : remainingTracks);
+     setShuffledPlaylist(
+      currentTrack ? [currentTrack, ...remainingTracks] : remainingTracks,
+    );
     setIsShuffling(true);
   };
 
   const seek = (value: number) => {
+    if (audioRef.current) audioRef.current.currentTime = value;
     setCurrentTime(value);
   };
 
@@ -117,7 +126,14 @@ export default function Player() {
           setDuration(currentTrack.duration_in_seconds);
         }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onLoadedMetadata={(event) => {
+          const audioDuration = event.currentTarget.duration;
+          setDuration(
+            Number.isFinite(audioDuration)
+              ? audioDuration
+              : currentTrack.duration_in_seconds,
+          );
+        }}
         onPlay={() => syncPlayingState(true)}
         onPause={() => syncPlayingState(false)}
         onError={() => syncPlayingState(false)}

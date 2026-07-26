@@ -4,7 +4,6 @@ import { tracksData } from "@/data";
 import styles from "./Playlist.module.css";
 
 export default function Playlist() {
-
   return (
     <div className={styles.centerblock__content}>
       <PlaylistHeader />
@@ -15,4 +14,4 @@ export default function Playlist() {
       </div>
     </div>
   );
- }
+}

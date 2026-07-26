@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { tracksData } from "@/data";
 import PlayerControls from "./PlayerControls";
 import TrackInfo from "./TrackInfo";
@@ -20,6 +21,8 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isLooping, setIsLooping] = useState(false);
+
+ const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -70,6 +73,10 @@ export default function Player() {
     setVolume(value);
   };
 
+  const syncPlayingState = (playing: boolean) => {
+    if (playing !== isPlaying) dispatch(setIsPlaying(playing));
+  };
+
   if (!currentTrack) return null;
 
   return (
@@ -85,9 +92,15 @@ export default function Player() {
         }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onPlay={() => syncPlayingState(true)}
+        onPause={() => syncPlayingState(false)}
+        onError={() => syncPlayingState(false)}
         onEnded={() => selectAdjacentTrack(1)}
       />
       <div className={styles.bar__content}>
+        <div className={styles.bar__time} aria-live="off">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
         <input
           className={styles.bar__playerProgress}
           type="range"
@@ -96,6 +109,7 @@ export default function Player() {
           step="0.1"
           value={currentTime}
           aria-label="Позиция воспроизведения"
+          style={{ "--progress": `${progress}%` } as CSSProperties}
           onChange={(event) => seek(Number(event.target.value))}
         />
         <div className={styles.bar__playerBlock}>
@@ -118,4 +132,12 @@ export default function Player() {
       </div>
     </div>
   );
+}
+
+function formatTime(timeInSeconds: number): string {
+  if (!Number.isFinite(timeInSeconds) || timeInSeconds < 0) return "0:00";
+
+  const minutes = Math.floor(timeInSeconds / 60);
+  const seconds = Math.floor(timeInSeconds % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

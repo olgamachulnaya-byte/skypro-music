@@ -33,5 +33,7 @@ export function playerReducer(
       return { ...state, currentTrack: action.payload };
     case "player/setIsPlaying":
       return { ...state, isPlaying: action.payload };
-  }
+    default:
+      return state;
+    }
 }

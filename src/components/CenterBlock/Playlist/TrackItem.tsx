@@ -52,18 +52,18 @@ export default function TrackItem({ track }: TrackItemProps) {
             )}
           </div>
           <div className={styles.track__titleText}>
-            <Link href="#" className={styles.track__titleLink}>
+           <Link href="#" className={styles.track__titleLink} onClick={(event) => event.preventDefault()}>
               {track.name}
             </Link>
           </div>
         </div>
         <div className={styles.track__author}>
-          <Link href="#" className={styles.track__authorLink}>
+         <Link href="#" className={styles.track__authorLink} onClick={(event) => event.preventDefault()}>
             {track.author}
           </Link>
         </div>
         <div className={styles.track__album}>
-          <Link href="#" className={styles.track__albumLink}>
+          <Link href="#" className={styles.track__albumLink} onClick={(event) => event.preventDefault()}>
             {track.album}
           </Link>
         </div>

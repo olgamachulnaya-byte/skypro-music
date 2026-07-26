@@ -12,12 +12,12 @@ export default function TrackInfo({ track }: { track: Track }) {
           </svg>
         </div>
         <div className={styles.trackPlay__author}>
-          <Link href="#" className={styles.trackPlay__authorLink}>
+          <Link href="#" className={styles.trackPlay__authorLink} onClick={(event) => event.preventDefault()}>
             {track.name}
           </Link>
         </div>
         <div className={styles.trackPlay__album}>
-          <Link href="#" className={styles.trackPlay__albumLink}>
+          <Link href="#" className={styles.trackPlay__albumLink} onClick={(event) => event.preventDefault()}>                        
             {track.author}
           </Link>
         </div>

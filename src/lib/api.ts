@@ -50,14 +50,20 @@ function getErrorMessage(body: unknown): string {
   const detail = record.detail ?? record.message ?? record.error;
   if (typeof detail === "string") return detail;
 
-  const messages = Object.entries(record).flatMap(([field, value]) => {
-    const values = Array.isArray(value) ? value : [value];
-    return values
-      .filter((item): item is string => typeof item === "string")
-      .map((message) => `${field}: ${message}`);
-  });
+  const messages = Object.entries(record).flatMap(([field, value]) =>
+    collectErrorMessages(value).map((message) => `${field}: ${message}`),
+  );
 
   return messages.join(". ") || "Не удалось выполнить запрос";
+}
+
+function collectErrorMessages(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(collectErrorMessages);
+  if (value && typeof value === "object") {
+    return Object.values(value).flatMap(collectErrorMessages);
+  }
+  return [];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -126,10 +132,14 @@ export async function getSelection(id: string): Promise<Selection> {
     return { ...selection, items: selection.items };
   }
 
-  if (selection.items.every((item): item is number => typeof item === "number")) {
+  if (
+    selection.items.every((item): item is number => typeof item === "number")
+  ) {
     const tracks = await getTracks();
     const tracksById = new Map(tracks.map((track) => [track._id, track]));
-    const selectionTracks = selection.items.map((trackId) => tracksById.get(trackId));
+    const selectionTracks = selection.items.map((trackId) =>
+      tracksById.get(trackId),
+    );
 
     if (selectionTracks.some((track) => !track)) {
       throw new ApiError("Не удалось найти все треки подборки", 0);
@@ -190,7 +200,11 @@ export async function signIn(credentials: Credentials): Promise<AuthTokens> {
       body: JSON.stringify(credentials),
     }),
   );
- if (!tokens || typeof tokens.access !== "string" || typeof tokens.refresh !== "string") {
+ if (
+    !tokens ||
+    typeof tokens.access !== "string" ||
+    typeof tokens.refresh !== "string"
+  ) {
     throw new ApiError("Сервер не вернул токены авторизации", 0);
   }
   return tokens;

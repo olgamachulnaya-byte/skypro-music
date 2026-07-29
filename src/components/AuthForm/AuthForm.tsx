@@ -50,10 +50,10 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         <Link href="/" className={styles.logo}>
           <Image src="/img/logo.png" alt="Skypro Music" width={140} height={21} priority />
         </Link>
-        <input className={styles.input} type="email" name="email" placeholder="Почта" autoComplete="email" disabled={isSubmitting} />
-        <input className={styles.input} type="password" name="password" placeholder="Пароль" autoComplete={mode === "signin" ? "current-password" : "new-password"} disabled={isSubmitting} />
+        <input className={styles.input} type="email" name="email" placeholder="Почта" aria-label="Почта" autoComplete="email" disabled={isSubmitting} />
+        <input className={styles.input} type="password" name="password" placeholder="Пароль" aria-label="Пароль" autoComplete={mode === "signin" ? "current-password" : "new-password"} disabled={isSubmitting} />
         {mode === "signup" && (
-          <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" autoComplete="new-password" disabled={isSubmitting} />
+          <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" aria-label="Повторите пароль" autoComplete="new-password" disabled={isSubmitting} />
         )}
         {error && <p className={styles.error} role="alert">{error}</p>}
         <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>

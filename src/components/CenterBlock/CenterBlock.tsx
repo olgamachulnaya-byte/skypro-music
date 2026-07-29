@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import SearchBar from "./SearchBar/SearchBar";
-import Filter from "./Filter/Filter";
+import Filter, { type TrackFilters } from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
@@ -17,6 +17,12 @@ export default function CenterBlock({
   selectionId?: string;
   title?: string;
 }) {
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<TrackFilters>({
+    author: null,
+    year: null,
+    genre: null,
+  });
   const loader = useCallback(
     (): Promise<TracksResult> =>
       selectionId
@@ -27,13 +33,32 @@ export default function CenterBlock({
         : getTracks().then((tracks: Track[]) => ({ tracks })),
     [selectionId],
   );
- const { tracks, title: apiTitle, isLoading, error, reload } = useTracks(loader);
+  const { tracks, title: apiTitle, isLoading, error, reload } =
+    useTracks(loader);
+  const visibleTracks = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase("ru");
+
+    return tracks.filter((track) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        track.name.toLocaleLowerCase("ru").includes(normalizedSearch);
+      const matchesAuthor = !filters.author || track.author === filters.author;
+      const matchesYear =
+        !filters.year || track.release_date.slice(0, 4) === filters.year;
+      const matchesGenre =
+        !filters.genre || track.genre.includes(filters.genre);
+
+      return matchesSearch && matchesAuthor && matchesYear && matchesGenre;
+    });
+  }, [filters, search, tracks]);
   
   return (
     <div className={styles.centerblock}>
-      <SearchBar />
+       <SearchBar value={search} onChange={setSearch} />
       <h2 className={styles.centerblock__h2}>{apiTitle ?? title}</h2>
-      {!selectionId && !isLoading && !error && <Filter tracks={tracks} />}
+      {!selectionId && !isLoading && !error && (
+        <Filter tracks={tracks} value={filters} onChange={setFilters} />
+      )}
       {isLoading && <TrackLoader />}
       {error && (
         <div className={`${styles.status} ${styles.error}`} role="alert">
@@ -43,7 +68,7 @@ export default function CenterBlock({
           </button>
         </div>
       )}
-      {!isLoading && !error && <Playlist tracks={tracks} />}
+      {!isLoading && !error && <Playlist tracks={visibleTracks} />}
     </div>
   );
 }

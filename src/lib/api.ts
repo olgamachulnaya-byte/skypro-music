@@ -39,18 +39,21 @@ export class ApiError extends Error {
 }
 
 function getErrorMessage(body: unknown): string {
+  if (typeof body === "string" && body.trim()) return body;
   if (!body || typeof body !== "object") return "Не удалось выполнить запрос";
 
   const record = body as Record<string, unknown>;
   const detail = record.detail ?? record.message ?? record.error;
   if (typeof detail === "string") return detail;
 
-  const firstValue = Object.values(record)[0];
-  if (typeof firstValue === "string") return firstValue;
-  if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
-    return firstValue[0];
-  }
-  return "Не удалось выполнить запрос";
+ const messages = Object.entries(record).flatMap(([field, value]) => {
+    const values = Array.isArray(value) ? value : [value];
+    return values
+      .filter((item): item is string => typeof item === "string")
+      .map((message) => `${field}: ${message}`);
+  });
+
+  return messages.join(". ") || "Не удалось выполнить запрос";
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -67,7 +70,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError("Не удалось связаться с сервером. Попробуйте позже", 0);
   }
-  const body: unknown = await response.json().catch(() => null);
+  const responseText = await response.text();
+  let body: unknown = null;
+
+  if (responseText) {
+    try {
+      body = JSON.parse(responseText) as unknown;
+    } catch {
+      body = responseText;
+    }
+  }
 
   if (!response.ok) throw new ApiError(getErrorMessage(body), response.status);
   return body as T;
@@ -80,13 +92,23 @@ function unwrap<T>(response: T | ApiEnvelope<T>): T {
 }
 
 export async function getTracks(): Promise<Track[]> {
-  return unwrap(await request<Track[] | ApiEnvelope<Track[]>>("/catalog/track/all/"));
+  const tracks = unwrap(
+    await request<Track[] | ApiEnvelope<Track[]>>("/catalog/track/all/"),
+  );
+  if (!Array.isArray(tracks)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+  return tracks;
 }
 
 export async function getSelection(id: string): Promise<Selection> {
-  return unwrap(
+  const selection = unwrap(
     await request<Selection | ApiEnvelope<Selection>>(`/catalog/selection/${id}/`),
   );
+  if (!selection || !Array.isArray(selection.items)) {
+    throw new ApiError("Сервер вернул некорректную подборку", 0);
+  }
+  return selection;
 }
 
 export async function signUp(credentials: Credentials): Promise<User> {
@@ -103,10 +125,14 @@ export async function signIn(credentials: Credentials): Promise<AuthTokens> {
     method: "POST",
     body: JSON.stringify(credentials),
   });
-  return unwrap(
+  const tokens = unwrap(
     await request<AuthTokens | ApiEnvelope<AuthTokens>>("/user/token/", {
       method: "POST",
       body: JSON.stringify(credentials),
     }),
   );
+if (!tokens || typeof tokens.access !== "string" || typeof tokens.refresh !== "string") {
+    throw new ApiError("Сервер не вернул токены авторизации", 0);
+  }
+  return tokens;
 }

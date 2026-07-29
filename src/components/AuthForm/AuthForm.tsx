@@ -29,13 +29,13 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     try {
       if (mode === "signup") {
         await signUp({ email, password });
-        router.push("/auth/signin");
+        router.replace("/auth/signin");
       } else {
         const tokens = await signIn({ email, password });
         localStorage.setItem("accessToken", tokens.access);
         localStorage.setItem("refreshToken", tokens.refresh);
         localStorage.setItem("userEmail", email);
-        router.push("/");
+        router.replace("/");
       }
     } catch (requestError: unknown) {
       setError(requestError instanceof Error ? requestError.message : "Неизвестная ошибка");
@@ -46,14 +46,14 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <div className={styles.wrapper}>
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
         <Link href="/" className={styles.logo}>
           <Image src="/img/logo.png" alt="Skypro Music" width={140} height={21} priority />
         </Link>
-        <input className={styles.input} type="email" name="email" placeholder="Почта" autoComplete="email" />
-        <input className={styles.input} type="password" name="password" placeholder="Пароль" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+        <input className={styles.input} type="email" name="email" placeholder="Почта" autoComplete="email" disabled={isSubmitting} />
+        <input className={styles.input} type="password" name="password" placeholder="Пароль" autoComplete={mode === "signin" ? "current-password" : "new-password"} disabled={isSubmitting} />
         {mode === "signup" && (
-          <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" autoComplete="new-password" />
+          <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" autoComplete="new-password" disabled={isSubmitting} />
         )}
         {error && <p className={styles.error} role="alert">{error}</p>}
         <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>

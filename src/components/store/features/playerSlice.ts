@@ -41,7 +41,7 @@ export function playerReducer(
       return { ...state, currentTrack: action.payload };
     case "player/setCurrentPlaylist":
       return { ...state, currentPlaylist: action.payload };
-      case "player/setIsPlaying":
+    case "player/setIsPlaying":
       return { ...state, isPlaying: action.payload };
     default:
       return state;

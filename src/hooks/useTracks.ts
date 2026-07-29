@@ -23,7 +23,8 @@ export function useTracks(loader: () => Promise<Track[]>): TracksState {
   useEffect(() => {
     let active = true;
 
-    loader()
+    Promise.resolve()
+      .then(loader)
       .then((tracks) => {
         if (active) setState({ tracks, isLoading: false, error: null });
       })

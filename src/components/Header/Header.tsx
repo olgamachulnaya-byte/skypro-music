@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./Header.module.css";
 
 export default function Header() {
@@ -21,19 +22,19 @@ export default function Header() {
       <div className={styles.nav__menu}>
         <ul className={styles.menu__list}>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
+            <Link href="/" className={styles.menu__link}>
               Главное
-            </a>
+            </Link>
           </li>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
+            <Link href="/" className={styles.menu__link}>
               Мой плейлист
-            </a>
+            </Link>
           </li>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
+            <Link href="/auth/signin" className={styles.menu__link}>
               Войти
-            </a>
+            </Link>
           </li>
         </ul>
       </div>

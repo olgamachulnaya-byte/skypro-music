@@ -24,13 +24,13 @@ export default function CenterBlock({
         : getTracks(),
     [selectionId],
   );
-const { tracks, isLoading, error, reload } = useTracks(loader);
+  const { tracks, isLoading, error, reload } = useTracks(loader);
   
-return (
+  return (
     <div className={styles.centerblock}>
       <SearchBar />
       <h2 className={styles.centerblock__h2}>{title}</h2>
-      {!selectionId && <Filter tracks={tracks} />}
+      {!selectionId && !isLoading && !error && <Filter tracks={tracks} />}
       {isLoading && <TrackLoader />}
       {error && (
         <div className={`${styles.status} ${styles.error}`} role="alert">

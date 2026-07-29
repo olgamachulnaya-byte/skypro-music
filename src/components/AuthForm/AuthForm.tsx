@@ -59,9 +59,12 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
           {isSubmitting ? "Подождите…" : mode === "signin" ? "Войти" : "Зарегистрироваться"}
         </button>
-        {mode === "signin" && (
-          <Link href="/auth/signup" className={styles.secondaryButton}>Зарегистрироваться</Link>
-        )}
+        <Link
+          href={mode === "signin" ? "/auth/signup" : "/auth/signin"}
+          className={styles.secondaryButton}
+        >
+          {mode === "signin" ? "Зарегистрироваться" : "Войти"}
+        </Link>
       </form>
     </div>
   );

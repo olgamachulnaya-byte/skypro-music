@@ -8,7 +8,7 @@ import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
 import { getSelection, getTracks } from "@/lib/api";
-import { useTracks } from "@/hooks/useTracks";
+import { useTracks, type TracksResult } from "@/hooks/useTracks";
 
 export default function CenterBlock({
   selectionId,
@@ -18,18 +18,21 @@ export default function CenterBlock({
   title?: string;
 }) {
   const loader = useCallback(
-    (): Promise<Track[]> =>
+    (): Promise<TracksResult> =>
       selectionId
-        ? getSelection(selectionId).then((selection) => selection.items)
-        : getTracks(),
+        ? getSelection(selectionId).then((selection) => ({
+            tracks: selection.items,
+            title: selection.name,
+          }))
+        : getTracks().then((tracks: Track[]) => ({ tracks })),
     [selectionId],
   );
-  const { tracks, isLoading, error, reload } = useTracks(loader);
+ const { tracks, title: apiTitle, isLoading, error, reload } = useTracks(loader);
   
   return (
     <div className={styles.centerblock}>
       <SearchBar />
-      <h2 className={styles.centerblock__h2}>{title}</h2>
+      <h2 className={styles.centerblock__h2}>{apiTitle ?? title}</h2>
       {!selectionId && !isLoading && !error && <Filter tracks={tracks} />}
       {isLoading && <TrackLoader />}
       {error && (

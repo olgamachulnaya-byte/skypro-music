@@ -5,17 +5,25 @@ import type { Track } from "@/data";
 
 interface TracksState {
   tracks: Track[];
+  title: string | null;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
 }
 
+export interface TracksResult {
+  tracks: Track[];
+  title?: string;
+}
+
+
 type TracksRequestState = Omit<TracksState, "reload">;
 
-export function useTracks(loader: () => Promise<Track[]>): TracksState {
+export function useTracks(loader: () => Promise<TracksResult>): TracksState {
   const [requestVersion, setRequestVersion] = useState(0);
   const [state, setState] = useState<TracksRequestState>({
     tracks: [],
+    title: null,
     isLoading: true,
     error: null,
   });
@@ -25,13 +33,21 @@ export function useTracks(loader: () => Promise<Track[]>): TracksState {
 
     Promise.resolve()
       .then(loader)
-      .then((tracks) => {
-        if (active) setState({ tracks, isLoading: false, error: null });
+      .then((result) => {
+        if (active) {
+          setState({
+            tracks: result.tracks,
+            title: result.title ?? null,
+            isLoading: false,
+            error: null,
+          });
+        }
       })
       .catch((error: unknown) => {
         if (active) {
           setState({
             tracks: [],
+            title: null,
             isLoading: false,
             error: error instanceof Error ? error.message : "Неизвестная ошибка",
           });
@@ -46,7 +62,7 @@ export function useTracks(loader: () => Promise<Track[]>): TracksState {
   return {
     ...state,
     reload: () => {
-      setState({ tracks: [], isLoading: true, error: null });
+      setState({ tracks: [], title: null, isLoading: true, error: null });
       setRequestVersion((version) => version + 1);
     },
   };

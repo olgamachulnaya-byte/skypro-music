@@ -31,6 +31,10 @@ export interface Selection {
   items: Track[];
 }
 
+interface SelectionResponse extends Omit<Selection, "items"> {
+  items: Array<Track | number>;
+}
+
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
     super(message);
@@ -46,7 +50,7 @@ function getErrorMessage(body: unknown): string {
   const detail = record.detail ?? record.message ?? record.error;
   if (typeof detail === "string") return detail;
 
- const messages = Object.entries(record).flatMap(([field, value]) => {
+  const messages = Object.entries(record).flatMap(([field, value]) => {
     const values = Array.isArray(value) ? value : [value];
     return values
       .filter((item): item is string => typeof item === "string")
@@ -95,7 +99,7 @@ export async function getTracks(): Promise<Track[]> {
   const tracks = unwrap(
     await request<Track[] | ApiEnvelope<Track[]>>("/catalog/track/all/"),
   );
-  if (!Array.isArray(tracks)) {
+  if (!Array.isArray(tracks) || !tracks.every(isTrack)) {
     throw new ApiError("Сервер вернул некорректный список треков", 0);
   }
   return tracks;
@@ -103,12 +107,50 @@ export async function getTracks(): Promise<Track[]> {
 
 export async function getSelection(id: string): Promise<Selection> {
   const selection = unwrap(
-    await request<Selection | ApiEnvelope<Selection>>(`/catalog/selection/${id}/`),
+    await request<SelectionResponse | ApiEnvelope<SelectionResponse>>(
+      `/catalog/selection/${encodeURIComponent(id)}/`,
+    ),
   );
   if (!selection || !Array.isArray(selection.items)) {
     throw new ApiError("Сервер вернул некорректную подборку", 0);
   }
-  return selection;
+   
+  if (selection.items.every((item): item is Track => isTrack(item))) {
+    return { ...selection, items: selection.items };
+  }
+
+  if (selection.items.every((item): item is number => typeof item === "number")) {
+    const tracks = await getTracks();
+    const tracksById = new Map(tracks.map((track) => [track._id, track]));
+    const selectionTracks = selection.items.map((trackId) => tracksById.get(trackId));
+
+    if (selectionTracks.some((track) => !track)) {
+      throw new ApiError("Не удалось найти все треки подборки", 0);
+    }
+
+    return {
+      ...selection,
+      items: selectionTracks as Track[],
+    };
+  }
+
+  throw new ApiError("Сервер вернул некорректные треки подборки", 0);
+}
+
+function isTrack(value: unknown): value is Track {
+  if (!value || typeof value !== "object") return false;
+
+  const track = value as Partial<Track>;
+  return (
+    typeof track._id === "number" &&
+    typeof track.name === "string" &&
+    typeof track.author === "string" &&
+    typeof track.release_date === "string" &&
+    Array.isArray(track.genre) &&
+    typeof track.duration_in_seconds === "number" &&
+    typeof track.album === "string" &&
+    typeof track.track_file === "string"
+  );
 }
 
 export async function signUp(credentials: Credentials): Promise<User> {
@@ -131,7 +173,7 @@ export async function signIn(credentials: Credentials): Promise<AuthTokens> {
       body: JSON.stringify(credentials),
     }),
   );
-if (!tokens || typeof tokens.access !== "string" || typeof tokens.refresh !== "string") {
+ if (!tokens || typeof tokens.access !== "string" || typeof tokens.refresh !== "string") {
     throw new ApiError("Сервер не вернул токены авторизации", 0);
   }
   return tokens;

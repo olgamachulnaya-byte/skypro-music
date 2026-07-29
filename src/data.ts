@@ -1,5 +1,5 @@
 export interface Track {
-  _id: number;
+  _id: string | number;
   name: string;
   author: string;
   release_date: string;
@@ -8,7 +8,7 @@ export interface Track {
   album: string;
   logo: string | null;
   track_file: string;
-  stared_user: number[];
+  stared_user: Array<string | number>;
 }
 
 export const tracksData: Track[] = [

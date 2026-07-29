@@ -7,14 +7,16 @@ import Playlist from "./Playlist/Playlist";
 import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
-import { getSelection, getTracks } from "@/lib/api";
+import { getFavoriteTracks, getSelection, getTracks } from "@/lib/api";
 import { useTracks, type TracksResult } from "@/hooks/useTracks";
 
 export default function CenterBlock({
   selectionId,
+  favorites = false,
   title = "Треки",
 }: {
   selectionId?: string;
+  favorites?: boolean;
   title?: string;
 }) {
   const [search, setSearch] = useState("");
@@ -25,13 +27,15 @@ export default function CenterBlock({
   });
   const loader = useCallback(
     (): Promise<TracksResult> =>
-      selectionId
+       favorites
+        ? getFavoriteTracks().then((tracks) => ({ tracks }))
+        : selectionId
         ? getSelection(selectionId).then((selection) => ({
             tracks: selection.items,
             title: selection.name,
           }))
         : getTracks().then((tracks: Track[]) => ({ tracks })),
-    [selectionId],
+      [favorites, selectionId],
   );
   const { tracks, title: apiTitle, isLoading, error, reload } =
     useTracks(loader);

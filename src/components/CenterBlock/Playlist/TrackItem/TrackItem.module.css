@@ -116,6 +116,18 @@
   stroke: #696969;
 }
 
+.favoriteButton {
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.favoriteActive {
+  fill: #ad61ff;
+  stroke: #ad61ff;
+}
+
 .track__timeText {
   font-style: normal;
   font-weight: 400;

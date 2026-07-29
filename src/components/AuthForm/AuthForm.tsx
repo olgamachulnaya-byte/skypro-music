@@ -32,11 +32,12 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     setIsSubmitting(true);
     try {
       if (mode === "signup") {
-        await signUp({ email, password });
-        router.replace("/auth/signin");
+        const result = await signUp({ email, password });
+        saveAuthSession({ email: result.user.email, userId: result.user._id, tokens: result.tokens });
+        router.replace("/");
       } else {
-        const tokens = await signIn({ email, password });
-        saveAuthSession({ email, tokens });
+        const result = await signIn({ email, password });
+        saveAuthSession({ email: result.user.email, userId: result.user._id, tokens: result.tokens });
         router.replace("/");
       }
     } catch (requestError: unknown) {

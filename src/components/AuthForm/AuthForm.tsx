@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signUp } from "@/lib/api";
+import { saveAuthSession } from "@/lib/auth";
 import styles from "./AuthForm.module.css";
 
 export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
@@ -35,9 +36,7 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         router.replace("/auth/signin");
       } else {
         const tokens = await signIn({ email, password });
-        localStorage.setItem("accessToken", tokens.access);
-        localStorage.setItem("refreshToken", tokens.refresh);
-        localStorage.setItem("userEmail", email);
+        saveAuthSession({ email, tokens });
         router.replace("/");
       }
     } catch (requestError: unknown) {

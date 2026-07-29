@@ -12,34 +12,51 @@ export interface AuthSession {
   tokens: AuthTokens;
 }
 
+function getStorage(): Storage | null {
+  return typeof window === "undefined" ? null : window.localStorage;
+}
+
 export function saveAuthSession(session: AuthSession): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, session.tokens.access);
-  localStorage.setItem(REFRESH_TOKEN_KEY, session.tokens.refresh);
-  localStorage.setItem(USER_EMAIL_KEY, session.email);
-  if (session.userId) localStorage.setItem(USER_ID_KEY, session.userId);
+  const storage = getStorage();
+  if (!storage) return;
+
+  storage.setItem(ACCESS_TOKEN_KEY, session.tokens.access);
+  storage.setItem(REFRESH_TOKEN_KEY, session.tokens.refresh);
+  storage.setItem(USER_EMAIL_KEY, session.email);
+  if (session.userId) {
+    storage.setItem(USER_ID_KEY, session.userId);
+  } else {
+    storage.removeItem(USER_ID_KEY);
+  }
   window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
 }
 
 export function getAuthEmail(): string | null {
-  const email = localStorage.getItem(USER_EMAIL_KEY);
-  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const storage = getStorage();
+  if (!storage) return null;
+
+  const email = storage.getItem(USER_EMAIL_KEY);
+  const accessToken = storage.getItem(ACCESS_TOKEN_KEY);
 
   return email && accessToken ? email : null;
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getStorage()?.getItem(ACCESS_TOKEN_KEY) ?? null;
 }
 
 export function getAuthUserId(): string | null {
-  return localStorage.getItem(USER_ID_KEY);
+  return getStorage()?.getItem(USER_ID_KEY) ?? null;
 }
 
 export function clearAuthSession(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(USER_EMAIL_KEY);
-  localStorage.removeItem(USER_ID_KEY);
+  const storage = getStorage();
+  if (!storage) return;
+
+  storage.removeItem(ACCESS_TOKEN_KEY);
+  storage.removeItem(REFRESH_TOKEN_KEY);
+  storage.removeItem(USER_EMAIL_KEY);
+  storage.removeItem(USER_ID_KEY);
   window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
 }
 

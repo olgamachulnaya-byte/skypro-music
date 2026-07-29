@@ -80,6 +80,11 @@ async function request<T>(
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const token = authenticated ? getAccessToken() : null;
   
+  if (authenticated && !token) {
+    clearTimeout(timeout);
+    throw new ApiError("Войдите в аккаунт, чтобы выполнить это действие", 401);
+  }
+
   try {
     const response = await fetch(`${API_URL}${path}`, {
       ...init,

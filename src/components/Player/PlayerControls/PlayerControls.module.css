@@ -1,0 +1,110 @@
+.player__controls {
+  display: flex;
+  flex-direction: row;
+  padding: 0 27px 0 31px;
+}
+
+.player__btnPrev,
+.player__btnPlay,
+.player__btnNext,
+.player__btnRepeat,
+.player__btnShuffle {
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.player__btnPrev {
+  margin-right: 23px;
+}
+
+.player__btnPrevSvg {
+  width: 15px;
+  height: 14px;
+}
+
+.player__btnPlay {
+  margin-right: 23px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.player__btnPlaySvg {
+  width: 22px;
+  height: 20px;
+  fill: #d9d9d9;
+}
+
+.player__btnNext {
+  margin-right: 28px;
+  fill: #a53939;
+}
+
+.player__btnNextSvg {
+  width: 15px;
+  height: 14px;
+  fill: inherit;
+  stroke: #d9d9d9;
+}
+
+.player__btnRepeat {
+  margin-right: 24px;
+}
+
+.player__btnRepeatSvg {
+  width: 18px;
+  height: 12px;
+  fill: transparent;
+  stroke: #696969;
+}
+
+.player__btnShuffle {
+  display: flex;
+  align-items: center;
+}
+
+.player__btnShuffleSvg {
+  width: 19px;
+  height: 12px;
+  fill: transparent;
+  stroke: #696969;
+}
+
+.player__controls button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.btn {
+  cursor: pointer;
+}
+
+.btnIcon:hover svg path {
+  fill: #acacac;
+  cursor: pointer;
+}
+
+.btnIcon:active svg path {
+  fill: #ffffff;
+  cursor: pointer;
+}
+
+.btnIconActive svg path {
+  fill: #ffffff;
+}
+
+.btnIconActive svg {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+}
+
+.btnIcon:active .trackPlay__likeSvg,
+.btnIcon:active .trackPlay__dislikeSvg {
+  fill: #696969;
+  stroke: #ffffff;
+  cursor: pointer;
+}

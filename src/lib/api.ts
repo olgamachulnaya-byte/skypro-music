@@ -205,10 +205,16 @@ export async function signUp(credentials: Credentials): Promise<User> {
 }
 
 export async function signIn(credentials: Credentials): Promise<AuthTokens> {
-  await request<User | ApiEnvelope<User>>("/user/login/", {
-    method: "POST",
-    body: JSON.stringify(credentials),
-  });
+  const user = unwrap(
+    await request<User | ApiEnvelope<User>>("/user/login/", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    }),
+  );
+  if (!user || typeof user.email !== "string") {
+    throw new ApiError("Сервер вернул некорректные данные пользователя", 0);
+  }
+
   const tokens = unwrap(
     await request<AuthTokens | ApiEnvelope<AuthTokens>>("/user/token/", {
       method: "POST",

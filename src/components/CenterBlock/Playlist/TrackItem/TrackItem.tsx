@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { tracksData, type Track } from "@/data";
+import type { Track } from "@/data";
 import {
   setCurrentTrack,
   setCurrentPlaylist,
@@ -12,6 +12,7 @@ import styles from "./TrackItem.module.css";
 
 interface TrackItemProps {
   track: Track;
+  playlist: Track[];
 }
 
 function formatDuration(durationInSeconds: number): string {
@@ -21,7 +22,7 @@ function formatDuration(durationInSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export default function TrackItem({ track }: TrackItemProps) {
+export default function TrackItem({ track, playlist }: TrackItemProps) {
   const dispatch = useAppDispatch();
   const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
   const isCurrent = currentTrack?._id === track._id;
@@ -33,7 +34,7 @@ export default function TrackItem({ track }: TrackItemProps) {
     }
 
     dispatch(setCurrentTrack(track));
-    dispatch(setCurrentPlaylist(tracksData));
+    dispatch(setCurrentPlaylist(playlist));
     dispatch(setIsPlaying(true));
   };
 

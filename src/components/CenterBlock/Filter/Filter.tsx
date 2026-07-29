@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import classNames from "classnames";
-import { tracksData } from "@/data";
+import type { Track } from "@/data";
 import styles from "./Filter.module.css";
 
 type FilterName = "author" | "year" | "genre";
@@ -19,21 +19,14 @@ function getUniqueOptions(values: readonly string[]): string[] {
   );
 }
 
-const uniqueAuthors = getUniqueOptions(tracksData.map((track) => track.author));
-const uniqueGenres = getUniqueOptions(tracksData.flatMap((track) => track.genre));
+export default function Filter({ tracks }: { tracks: Track[] }) {
+  const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
+  const filters: FilterConfig[] = [
+    { name: "author", label: "исполнителю", options: getUniqueOptions(tracks.map((track) => track.author)) },
+    { name: "year", label: "году выпуска", options: getUniqueOptions(tracks.map((track) => track.release_date.slice(0, 4))) },
+    { name: "genre", label: "жанру", options: getUniqueOptions(tracks.flatMap((track) => track.genre)) },
+  ];
 
-
-const filters: FilterConfig[] = [
-  { name: "author", label: "исполнителю", options: uniqueAuthors },
-  {
-    name: "year",
-    label: "году выпуска",
-    options: ["По умолчанию", "Сначала новые", "Сначала старые"],
-  },
-  { name: "genre", label: "жанру", options: uniqueGenres },
-];
-
-export default function Filter() {
   const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
 
   const toggleFilter = (nameFilter: FilterName): void => {

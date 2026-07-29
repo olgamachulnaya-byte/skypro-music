@@ -1,15 +1,35 @@
+"use client";
+
+import { useCallback } from "react";
 import SearchBar from "./SearchBar/SearchBar";
 import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import styles from "./CenterBlock.module.css";
+import { getSelection, getTracks } from "@/lib/api";
+import { useTracks } from "@/hooks/useTracks";
 
-export default function CenterBlock() {
+export default function CenterBlock({
+  selectionId,
+  title = "Треки",
+}: {
+  selectionId?: string;
+  title?: string;
+}) {
+  const loader = useCallback(
+    () => selectionId ? getSelection(selectionId).then((selection) => selection.items) : getTracks(),
+    [selectionId],
+  );
+  const { tracks, isLoading, error } = useTracks(loader);
+
   return (
     <div className={styles.centerblock}>
       <SearchBar />
-      <h2 className={styles.centerblock__h2}>Треки</h2>
-      <Filter />
-      <Playlist />
+       <h2 className={styles.centerblock__h2}>{title}</h2>
+      {!selectionId && <Filter tracks={tracks} />}
+      {isLoading && <p className={styles.status}>Загрузка треков…</p>}
+      {error && <p className={`${styles.status} ${styles.error}`}>{error}</p>}
+      {!isLoading && !error && <Playlist tracks={tracks} />}
     </div>
+    
   );
 }

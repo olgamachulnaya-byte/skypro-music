@@ -4,6 +4,16 @@
   padding: 20px 40px 20px 111px;
 }
 
+.status {
+  padding: 48px 0;
+  color: #b1b1b1;
+  font-size: 18px;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
 .centerblock__h2 {
   font-style: normal;
   font-weight: 400;

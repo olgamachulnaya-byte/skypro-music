@@ -62,6 +62,7 @@ function getErrorMessage(body: unknown): string {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  let responseText: string;
 
   try {
     response = await fetch(`${API_URL}${path}`, {
@@ -71,10 +72,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         ...init?.headers,
       },
     });
+    responseText = await response.text();
   } catch {
     throw new ApiError("Не удалось связаться с сервером. Попробуйте позже", 0);
   }
-  const responseText = await response.text();
+  
   let body: unknown = null;
 
   if (responseText) {
@@ -111,7 +113,12 @@ export async function getSelection(id: string): Promise<Selection> {
       `/catalog/selection/${encodeURIComponent(id)}/`,
     ),
   );
-  if (!selection || !Array.isArray(selection.items)) {
+  if (
+    !selection ||
+    typeof selection._id !== "number" ||
+    typeof selection.name !== "string" ||
+    !Array.isArray(selection.items)
+  ) {
     throw new ApiError("Сервер вернул некорректную подборку", 0);
   }
    
@@ -147,19 +154,29 @@ function isTrack(value: unknown): value is Track {
     typeof track.author === "string" &&
     typeof track.release_date === "string" &&
     Array.isArray(track.genre) &&
+    track.genre.every((genre) => typeof genre === "string") &&
     typeof track.duration_in_seconds === "number" &&
     typeof track.album === "string" &&
-    typeof track.track_file === "string"
+    (typeof track.logo === "string" || track.logo === null) &&
+    typeof track.track_file === "string" &&
+    Array.isArray(track.stared_user) &&
+    track.stared_user.every((userId) => typeof userId === "number")
   );
 }
 
 export async function signUp(credentials: Credentials): Promise<User> {
-  return unwrap(
+  const user = unwrap(
     await request<User | ApiEnvelope<User>>("/user/signup/", {
       method: "POST",
       body: JSON.stringify({ ...credentials, username: credentials.email }),
     }),
   );
+
+  if (!user || typeof user.email !== "string") {
+    throw new ApiError("Сервер вернул некорректные данные пользователя", 0);
+  }
+
+  return user;
 }
 
 export async function signIn(credentials: Credentials): Promise<AuthTokens> {

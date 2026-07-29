@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import classNames from "classnames";
 import type { Track } from "@/data";
 import styles from "./Filter.module.css";
@@ -14,18 +14,35 @@ interface FilterConfig {
 }
 
 function getUniqueOptions(values: readonly string[]): string[] {
-  return Array.from(new Set(values)).sort((firstValue, secondValue) =>
-    firstValue.localeCompare(secondValue, "ru"),
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort(
+    (firstValue, secondValue) => firstValue.localeCompare(secondValue, "ru"),
   );
 }
 
 export default function Filter({ tracks }: { tracks: Track[] }) {
   const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
-  const filters: FilterConfig[] = [
-    { name: "author", label: "исполнителю", options: getUniqueOptions(tracks.map((track) => track.author)) },
-    { name: "year", label: "году выпуска", options: getUniqueOptions(tracks.map((track) => track.release_date.slice(0, 4))) },
-    { name: "genre", label: "жанру", options: getUniqueOptions(tracks.flatMap((track) => track.genre)) },
-  ];
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        name: "author",
+        label: "исполнителю",
+        options: getUniqueOptions(tracks.map((track) => track.author)),
+      },
+      {
+        name: "year",
+        label: "году выпуска",
+        options: getUniqueOptions(
+          tracks.map((track) => track.release_date.slice(0, 4)),
+        ),
+      },
+      {
+        name: "genre",
+        label: "жанру",
+        options: getUniqueOptions(tracks.flatMap((track) => track.genre)),
+      },
+    ],
+    [tracks],
+  );
 
   const toggleFilter = (nameFilter: FilterName): void => {
     setActiveFilter((currentFilter) =>

@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import SearchBar from "./SearchBar/SearchBar";
 import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
+import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
 import { getSelection, getTracks } from "@/lib/api";
@@ -23,18 +24,21 @@ export default function CenterBlock({
         : getTracks(),
     [selectionId],
   );
-  const { tracks, isLoading, error } = useTracks(loader);
-
-  return (
+ const { tracks, isLoading, error, reload } = useTracks(loader);
+  
+ return (
     <div className={styles.centerblock}>
       <SearchBar />
       <h2 className={styles.centerblock__h2}>{title}</h2>
       {!selectionId && <Filter tracks={tracks} />}
-      {isLoading && <p className={styles.status}>Загрузка треков…</p>}
+      {isLoading && <TrackLoader />}
       {error && (
-        <p className={`${styles.status} ${styles.error}`} role="alert">
-          {error}
-        </p>
+         <div className={`${styles.status} ${styles.error}`} role="alert">
+          <p>{error}</p>
+          <button className={styles.retryButton} type="button" onClick={reload}>
+            Повторить
+          </button>
+        </div>
       )}
       {!isLoading && !error && <Playlist tracks={tracks} />}
     </div>

@@ -1,0 +1,42 @@
+.loader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 51px minmax(170px, 1.3fr) minmax(140px, 1fr) minmax(120px, .8fr) 45px;
+  align-items: center;
+  gap: 17px;
+  min-height: 51px;
+}
+
+.shimmer {
+  display: block;
+  height: 18px;
+  border-radius: 4px;
+  background: linear-gradient(100deg, #313131 30%, #414141 50%, #313131 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.cover {
+  width: 51px;
+  height: 51px;
+  border-radius: 0;
+}
+
+.title { width: 72%; }
+.author { width: 66%; }
+.album { width: 78%; }
+.duration { width: 45px; }
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}

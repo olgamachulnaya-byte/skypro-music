@@ -7,10 +7,14 @@ interface TracksState {
   tracks: Track[];
   isLoading: boolean;
   error: string | null;
+  reload: () => void;
 }
 
+type TracksRequestState = Omit<TracksState, "reload">;
+
 export function useTracks(loader: () => Promise<Track[]>): TracksState {
-  const [state, setState] = useState<TracksState>({
+  const [requestVersion, setRequestVersion] = useState(0);
+  const [state, setState] = useState<TracksRequestState>({
     tracks: [],
     isLoading: true,
     error: null,
@@ -36,7 +40,13 @@ export function useTracks(loader: () => Promise<Track[]>): TracksState {
     return () => {
       active = false;
     };
-  }, [loader]);
+  }, [loader, requestVersion]);
 
-  return state;
+  return {
+    ...state,
+    reload: () => {
+      setState({ tracks: [], isLoading: true, error: null });
+      setRequestVersion((version) => version + 1);
+    },
+  };
 }

@@ -21,6 +21,9 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     const repeatPassword = String(formData.get("repeatPassword") ?? "");
 
     if (!email || !password) return setError("Заполните почту и пароль");
+     if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return setError("Введите корректный адрес электронной почты");
+    }
     if (mode === "signup" && password !== repeatPassword) {
       return setError("Пароли не совпадают");
     }

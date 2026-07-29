@@ -3,6 +3,7 @@ import type { Track } from "@/data";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "https://webdev-music-003b5b991590.herokuapp.com";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 interface ApiEnvelope<T> {
   data: T;
@@ -69,18 +70,32 @@ function collectErrorMessages(value: unknown): string[] {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   let responseText: string;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS,
+  );
+
 
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...init,
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...init?.headers,
       },
+      signal: controller.signal,
     });
     responseText = await response.text();
-  } catch {
-    throw new ApiError("Не удалось связаться с сервером. Попробуйте позже", 0);
+  } catch (error: unknown) {
+    const message =
+      error instanceof DOMException && error.name === "AbortError"
+        ? "Сервер не ответил вовремя. Попробуйте ещё раз"
+        : "Не удалось связаться с сервером. Попробуйте позже";
+    throw new ApiError(message, 0);
+  } finally {
+    clearTimeout(timeoutId);
   }
   
   let body: unknown = null;

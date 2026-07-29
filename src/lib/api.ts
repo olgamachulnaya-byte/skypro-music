@@ -67,6 +67,10 @@ function errorMessage(body: unknown): string {
   return messages.join(". ") || "Не удалось выполнить запрос";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 async function request<T>(
   path: string,
   init: RequestInit = {},
@@ -113,9 +117,7 @@ async function request<T>(
 }
 
   function unwrap<T>(value: T | ApiEnvelope<T>): T {
-  return value && typeof value === "object" && "data" in value
-    ? (value as ApiEnvelope<T>).data
-    : value;
+  return isRecord(value) && "data" in value ? (value.data as T) : (value as T);
 }
 
   function isTrack(value: unknown): value is Track {
@@ -133,7 +135,10 @@ async function request<T>(
     typeof track.album === "string" &&
     (typeof track.logo === "string" || track.logo === null) &&
     typeof track.track_file === "string" &&
-    Array.isArray(track.stared_user)
+     Array.isArray(track.stared_user) &&
+    track.stared_user.every(
+      (userId) => typeof userId === "number" || typeof userId === "string",
+    )
   );
 }
 
@@ -196,9 +201,20 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
       method: "POST",
       body: JSON.stringify(credentials),
     }),
-  ) as Record<string, unknown>;
-  const rawUser = (response.user ?? response) as Record<string, unknown>;
-  const rawTokens = (response.tokens ?? response) as Record<string, unknown>;
+  );
+
+  if (!isRecord(response)) {
+    throw new ApiError("Сервер вернул некорректные данные авторизации", 0);
+  }
+
+  const userValue = response.user ?? response;
+  const tokensValue = response.tokens ?? response;
+  if (!isRecord(userValue) || !isRecord(tokensValue)) {
+    throw new ApiError("Сервер вернул некорректные данные авторизации", 0);
+  }
+
+  const rawUser = userValue;
+  const rawTokens = tokensValue;
   const access = rawTokens.access ?? rawTokens.accessToken ?? rawTokens.token;
   const refresh = rawTokens.refresh ?? rawTokens.refreshToken ?? "";
   const id = rawUser._id ?? rawUser.id ?? response.userId;
@@ -213,7 +229,8 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
   return {
     user: {
       _id: id,
-      email: typeof rawUser.email === "string" ? rawUser.email : credentials.email,
+      email:
+        typeof rawUser.email === "string" ? rawUser.email : credentials.email,
     },
     tokens: { access, refresh: String(refresh) },
   };

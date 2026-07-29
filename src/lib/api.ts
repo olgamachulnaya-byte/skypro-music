@@ -54,13 +54,19 @@ function getErrorMessage(body: unknown): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+    });
+  } catch {
+    throw new ApiError("Не удалось связаться с сервером. Попробуйте позже", 0);
+  }
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) throw new ApiError(getErrorMessage(body), response.status);

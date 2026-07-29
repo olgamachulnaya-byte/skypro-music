@@ -27,8 +27,6 @@ export default function Filter({ tracks }: { tracks: Track[] }) {
     { name: "genre", label: "жанру", options: getUniqueOptions(tracks.flatMap((track) => track.genre)) },
   ];
 
-  const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
-
   const toggleFilter = (nameFilter: FilterName): void => {
     setActiveFilter((currentFilter) =>
       currentFilter === nameFilter ? null : nameFilter,

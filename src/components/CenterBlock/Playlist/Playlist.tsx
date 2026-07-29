@@ -8,6 +8,7 @@ export default function Playlist({ tracks }: { tracks: Track[] }) {
     <div className={styles.centerblock__content}>
       <PlaylistHeader />
       <div className={styles.content__playlist}>
+        {tracks.length === 0 && <p>Треки не найдены</p>}
         {tracks.map((track) => (
           <TrackItem key={track._id} track={track} playlist={tracks} />
         ))}

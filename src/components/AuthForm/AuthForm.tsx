@@ -56,7 +56,7 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
           <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" autoComplete="new-password" />
         )}
         {error && <p className={styles.error} role="alert">{error}</p>}
-        <button className={styles.primaryButton} disabled={isSubmitting}>
+        <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
           {isSubmitting ? "Подождите…" : mode === "signin" ? "Войти" : "Зарегистрироваться"}
         </button>
         {mode === "signin" && (

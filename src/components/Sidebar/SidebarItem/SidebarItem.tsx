@@ -9,6 +9,7 @@ interface SidebarItemProps {
 }
 
 export default function SidebarItem({ src, alt, href }: SidebarItemProps) {
+    return (
     <div className={styles.sidebar__item}>
       <Link href={href} className={styles.sidebar__link}>
         <Image

@@ -3,7 +3,7 @@ import { getAccessToken } from "./auth";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://skymusic-api.onrender.com/api"
+  "https://webdev-music-003b5b991590.herokuapp.com/api"
 ).replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 15_000;
 

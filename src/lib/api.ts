@@ -3,7 +3,7 @@ import { getAccessToken } from "./auth";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://webdev-music-003b5b991590.herokuapp.com/api"
+  "https://webdev-music-003b5b991590.herokuapp.com"
 ).replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -14,6 +14,7 @@ interface ApiEnvelope<T> {
 export interface Credentials {
   email: string;
   password: string;
+  username?: string;
 }
 
 export interface User {
@@ -44,7 +45,10 @@ interface SelectionResponse extends Omit<Selection, "items"> {
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
+ constructor(
+    message: string,
+    public readonly status: number,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -156,7 +160,7 @@ async function request<T>(
 }
 
 export async function getTracks(): Promise<Track[]> {
-  const response = unwrap(await request<unknown>("/tracks"));
+  const response = unwrap(await request<unknown>("/catalog/track/all/"));
   const tracks =
     response && typeof response === "object" && "tracks" in response
       ? (response as { tracks: unknown }).tracks
@@ -167,7 +171,7 @@ export async function getTracks(): Promise<Track[]> {
 export async function getSelection(id: string): Promise<Selection> {
   const selection = unwrap(
     await request<SelectionResponse | ApiEnvelope<SelectionResponse>>(
-      `/selections/${encodeURIComponent(id)}`,
+      `/catalog/selection/${encodeURIComponent(id)}/`,
     ),
   );
 
@@ -194,15 +198,15 @@ export async function getSelection(id: string): Promise<Selection> {
   return { ...selection, items: items as Track[] };
 }
 export async function signUp(credentials: Credentials): Promise<void> {
-  await request<unknown>("/auth/register", {
+  await request<unknown>("/user/signup/", {
     method: "POST",
     body: JSON.stringify(credentials),
   });
 }
 
 export async function signIn(credentials: Credentials): Promise<AuthResult> {
- const response = unwrap(
-    await request<unknown>("/auth/login", {
+  const response = unwrap(
+    await request<unknown>("/user/login/", {
       method: "POST",
       body: JSON.stringify(credentials),
     }),
@@ -212,38 +216,42 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
     throw new ApiError("Сервер вернул некорректные данные авторизации", 0);
   }
 
-  const userValue = response.user ?? response;
-  const tokensValue = response.tokens ?? response;
-  if (!isRecord(userValue) || !isRecord(tokensValue)) {
+  const id = response._id ?? response.id;
+  const email =
+    typeof response.email === "string" ? response.email : credentials.email;
+  const username =
+    typeof response.username === "string" ? response.username : undefined;
+
+  if (typeof id !== "string" && typeof id !== "number") {
     throw new ApiError("Сервер вернул некорректные данные авторизации", 0);
   }
 
-  const rawUser = userValue;
-  const rawTokens = tokensValue;
-  const access = rawTokens.access ?? rawTokens.accessToken ?? rawTokens.token;
-  const refresh = rawTokens.refresh ?? rawTokens.refreshToken ?? "";
-  const id = rawUser._id ?? rawUser.id ?? response.userId;
+  const tokens = unwrap(
+    await request<unknown>("/user/token/", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    }),
+  );
 
-  if (
-    typeof access !== "string" ||
-    (typeof id !== "string" && typeof id !== "number")
-  ) {
-    throw new ApiError("Сервер вернул некорректные данные авторизации", 0);
+  if (!isRecord(tokens)) {
+    throw new ApiError("Сервер вернул некорректные токены авторизации", 0);
+  }
+
+  const access = tokens.access;
+  const refresh = tokens.refresh;
+  if (typeof access !== "string" || typeof refresh !== "string") {
+    throw new ApiError("Сервер вернул некорректные токены авторизации", 0);
   }
 
   return {
-    user: {
-      _id: id,
-      email:
-        typeof rawUser.email === "string" ? rawUser.email : credentials.email,
-    },
-    tokens: { access, refresh: String(refresh) },
+    user: { _id: id, email, username },
+    tokens: { access, refresh },
   };
 }
 
 export async function getFavoriteTracks(): Promise<Track[]> {
   return parseTracks(
-    await request<unknown>("/favorites", {}, true),
+    await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
 }
 export async function toggleFavorite(
@@ -251,7 +259,7 @@ export async function toggleFavorite(
   favorite: boolean,
 ): Promise<void> {
   await request(
-    `/tracks/${encodeURIComponent(String(trackId))}/favorite`,
+    `/catalog/track/${encodeURIComponent(String(trackId))}/favorite/`,
     { method: favorite ? "POST" : "DELETE" },
     true,
   );

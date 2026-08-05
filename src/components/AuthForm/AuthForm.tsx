@@ -17,12 +17,16 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     event.preventDefault();
     setError(null);
     const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
     const repeatPassword = String(formData.get("repeatPassword") ?? "");
 
     if (!email || !password) return setError("Заполните почту и пароль");
-     if (!/^\S+@\S+\.\S+$/.test(email)) {
+      if (mode === "signup" && !username) {
+      return setError("Введите имя пользователя");
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       return setError("Введите корректный адрес электронной почты");
     }
     if (mode === "signup" && password !== repeatPassword) {
@@ -32,7 +36,7 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     setIsSubmitting(true);
     try {
       if (mode === "signup") {
-        await signUp({ email, password });
+        await signUp({ email, password, username });
         router.replace("/auth/signin");
       } else {
         const result = await signIn({ email, password });
@@ -45,7 +49,11 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         router.replace("/");
       }
     } catch (requestError: unknown) {
-      setError(requestError instanceof Error ? requestError.message : "Неизвестная ошибка");
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Неизвестная ошибка",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -53,18 +61,76 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <div className={styles.wrapper}>
-      <form className={styles.form} onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
+       <form
+        className={styles.form}
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={isSubmitting}
+      >
         <Link href="/" className={styles.logo}>
-          <Image src="/img/logo.png" alt="Skypro Music" width={140} height={21} priority />
+          <Image
+            src="/img/logo.png"
+            alt="Skypro Music"
+            width={140}
+            height={21}
+            priority
+          />
         </Link>
-        <input className={styles.input} type="email" name="email" placeholder="Почта" aria-label="Почта" autoComplete="email" disabled={isSubmitting} />
-        <input className={styles.input} type="password" name="password" placeholder="Пароль" aria-label="Пароль" autoComplete={mode === "signin" ? "current-password" : "new-password"} disabled={isSubmitting} />
         {mode === "signup" && (
-          <input className={styles.input} type="password" name="repeatPassword" placeholder="Повторите пароль" aria-label="Повторите пароль" autoComplete="new-password" disabled={isSubmitting} />
+         <input
+            className={styles.input}
+            type="text"
+            name="username"
+            placeholder="Имя пользователя"
+            aria-label="Имя пользователя"
+            autoComplete="username"
+            disabled={isSubmitting}
+          />
         )}
-        {error && <p className={styles.error} role="alert">{error}</p>}
-        <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-          {isSubmitting ? "Подождите…" : mode === "signin" ? "Войти" : "Зарегистрироваться"}
+        <input
+          className={styles.input}
+          type="email"
+          name="email"
+          placeholder="Почта"
+          aria-label="Почта"
+          autoComplete="email"
+          disabled={isSubmitting}
+        />
+        <input
+          className={styles.input}
+          type="password"
+          name="password"
+          placeholder="Пароль"
+          aria-label="Пароль"
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          disabled={isSubmitting}
+        />
+        {mode === "signup" && (
+          <input
+            className={styles.input}
+            type="password"
+            name="repeatPassword"
+            placeholder="Повторите пароль"
+            aria-label="Повторите пароль"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+          />
+        )}
+         {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          className={styles.primaryButton}
+          disabled={isSubmitting}
+        >
+          {isSubmitting
+            ? "Подождите…"
+            : mode === "signin"
+              ? "Войти"
+              : "Зарегистрироваться"}
         </button>
         <Link
           href={mode === "signin" ? "/auth/signup" : "/auth/signin"}

@@ -1,7 +1,12 @@
 .centerblock {
   width: auto;
   flex-grow: 3;
+  min-width: 0;
+  min-height: 0;
   padding: 20px 40px 20px 111px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .status {

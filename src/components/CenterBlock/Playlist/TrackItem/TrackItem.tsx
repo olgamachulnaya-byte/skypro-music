@@ -26,12 +26,25 @@ function formatDuration(durationInSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function getFavoriteUserId(user: Track["stared_user"][number]): string | null {
+  if (typeof user === "string" || typeof user === "number") {
+    return String(user);
+  }
+
+  const id = user._id ?? user.id;
+  return typeof id === "string" || typeof id === "number" ? String(id) : null;
+}
+
 export default function TrackItem({ track, playlist }: TrackItemProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const userId = useSyncExternalStore(subscribeToAuthSession, getAuthUserId, () => null);
   const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
-  const favorite = favoriteOverride ?? (userId ? track.stared_user.map(String).includes(userId) : false);
+  const favorite =
+    favoriteOverride ??
+    (userId
+      ? track.stared_user.some((user) => getFavoriteUserId(user) === userId)
+      : false);
   const [favoriteError, setFavoriteError] = useState(false);
   const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
   const isCurrent = currentTrack?._id === track._id;

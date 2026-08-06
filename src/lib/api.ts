@@ -1,4 +1,4 @@
-import type { Track } from "@/data";
+import type { Track, TrackUser } from "@/data";
 import { getAccessToken } from "./auth";
 
 const API_URL = (
@@ -125,13 +125,20 @@ async function request<T>(
   }
 }
 
-  function unwrap<T>(value: T | ApiEnvelope<T>): T {
+function unwrap<T>(value: T | ApiEnvelope<T>): T {
   return isRecord(value) && "data" in value ? (value.data as T) : (value as T);
 }
 
-  function isTrack(value: unknown): value is Track {
-  if (!value || typeof value !== "object") return false;
-   const track = value as Partial<Track>;
+function isTrackUser(value: unknown): value is TrackUser {
+  if (!isRecord(value)) return false;
+
+  const id = value._id ?? value.id;
+  return typeof id === "number" || typeof id === "string";
+}
+
+function isTrack(value: unknown): value is Track {
+  if (!isRecord(value)) return false;
+  const track = value as Partial<Track>;
 
   return (
     (typeof track._id === "number" || typeof track._id === "string") &&
@@ -144,9 +151,12 @@ async function request<T>(
     typeof track.album === "string" &&
     (typeof track.logo === "string" || track.logo === null) &&
     typeof track.track_file === "string" &&
-     Array.isArray(track.stared_user) &&
+    Array.isArray(track.stared_user) &&
     track.stared_user.every(
-      (userId) => typeof userId === "number" || typeof userId === "string",
+      (user) =>
+        typeof user === "number" ||
+        typeof user === "string" ||
+        isTrackUser(user),
     )
   );
 }
@@ -156,7 +166,7 @@ async function request<T>(
   if (!Array.isArray(unwrapped) || !unwrapped.every(isTrack)) {
     throw new ApiError("Сервер вернул некорректный список треков", 0);
   }
-  return unwrapped; 
+  return unwrapped;
 }
 
 export async function getTracks(): Promise<Track[]> {

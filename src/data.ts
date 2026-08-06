@@ -8,7 +8,13 @@ export interface Track {
   album: string;
   logo: string | null;
   track_file: string;
-  stared_user: Array<string | number>;
+  stared_user: Array<string | number | TrackUser>;
+}
+
+/** User references returned in the `stared_user` field by the catalog API. */
+export interface TrackUser {
+  _id?: string | number;
+  id?: string | number;
 }
 
 export const tracksData: Track[] = [

@@ -136,37 +136,72 @@ function isTrackUser(value: unknown): value is TrackUser {
   return typeof id === "number" || typeof id === "string";
 }
 
-function isTrack(value: unknown): value is Track {
-  if (!isRecord(value)) return false;
-  const track = value as Partial<Track>;
+/**
+ * Converts the catalog wire format to the format used by the UI.
+ *
+ * The catalog has returned `genre` both as a single string and as an array in
+ * different API versions. Keeping that difference at the API boundary means
+ * filters and track components can consistently work with `string[]`.
+ */
+function parseTrack(value: unknown): Track | null {
+  if (!isRecord(value)) return null;
 
-  return (
-    (typeof track._id === "number" || typeof track._id === "string") &&
-    typeof track.name === "string" &&
-    typeof track.author === "string" &&
-    typeof track.release_date === "string" &&
-    Array.isArray(track.genre) &&
-    track.genre.every((genre) => typeof genre === "string") &&
-    typeof track.duration_in_seconds === "number" &&
-    typeof track.album === "string" &&
-    (typeof track.logo === "string" || track.logo === null) &&
-    typeof track.track_file === "string" &&
-    Array.isArray(track.stared_user) &&
-    track.stared_user.every(
+  const id = value._id ?? value.id;
+  const genre =
+    typeof value.genre === "string"
+      ? [value.genre]
+      : Array.isArray(value.genre) &&
+          value.genre.every((item) => typeof item === "string")
+        ? value.genre
+        : null;
+  const staredUser = value.stared_user;
+
+  if (
+    (typeof id !== "number" && typeof id !== "string") ||
+    typeof value.name !== "string" ||
+    typeof value.author !== "string" ||
+    typeof value.release_date !== "string" ||
+    genre === null ||
+    typeof value.duration_in_seconds !== "number" ||
+    typeof value.album !== "string" ||
+    (typeof value.logo !== "string" && value.logo !== null) ||
+    typeof value.track_file !== "string" ||
+    !Array.isArray(staredUser) ||
+    !staredUser.every(
       (user) =>
         typeof user === "number" ||
         typeof user === "string" ||
         isTrackUser(user),
     )
-  );
+  ) {
+    return null;
+  }
+
+  return {
+    _id: id,
+    name: value.name,
+    author: value.author,
+    release_date: value.release_date,
+    genre,
+    duration_in_seconds: value.duration_in_seconds,
+    album: value.album,
+    logo: value.logo,
+    track_file: value.track_file,
+    stared_user: staredUser,
+  };
 }
 
- function parseTracks(value: unknown): Track[] {
+function parseTracks(value: unknown): Track[] {
   const unwrapped = unwrap(value as unknown | ApiEnvelope<unknown>);
-  if (!Array.isArray(unwrapped) || !unwrapped.every(isTrack)) {
+  if (!Array.isArray(unwrapped)) {
     throw new ApiError("Сервер вернул некорректный список треков", 0);
   }
-  return unwrapped;
+
+  const tracks = unwrapped.map(parseTrack);
+  if (tracks.some((track) => track === null)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+  return tracks as Track[];
 }
 
 export async function getTracks(): Promise<Track[]> {
@@ -194,8 +229,9 @@ export async function getSelection(id: string): Promise<Selection> {
     throw new ApiError("Сервер вернул некорректную подборку", 0);
   }
 
-  if (selection.items.every(isTrack)) {
-    return { ...selection, items: selection.items };
+  const selectionTracks = selection.items.map(parseTrack);
+  if (selectionTracks.every((track): track is Track => track !== null)) {
+    return { ...selection, items: selectionTracks };
   }
 
   const tracks = await getTracks();

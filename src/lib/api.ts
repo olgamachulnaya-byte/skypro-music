@@ -204,13 +204,25 @@ function parseTracks(value: unknown): Track[] {
   return tracks as Track[];
 }
 
+/**
+ * Extracts a track list from both the legacy response and the paginated
+ * Django REST Framework response used by the current catalog API.
+ */
+function parseTrackListResponse(value: unknown): Track[] {
+  const response = unwrap(value as unknown | ApiEnvelope<unknown>);
+
+  if (isRecord(response)) {
+    if ("results" in response) return parseTracks(response.results);
+    if ("tracks" in response) return parseTracks(response.tracks);
+  }
+
+  return parseTracks(response);
+}
+
 export async function getTracks(): Promise<Track[]> {
-  const response = unwrap(await request<unknown>("/catalog/track/all/"));
-  const tracks =
-    response && typeof response === "object" && "tracks" in response
-      ? (response as { tracks: unknown }).tracks
-      : response;
-  return parseTracks(tracks);
+  return parseTrackListResponse(
+    await request<unknown>("/catalog/track/all/"),
+  );
 }
 
 export async function getSelection(id: string): Promise<Selection> {
@@ -296,7 +308,7 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
 }
 
 export async function getFavoriteTracks(): Promise<Track[]> {
-  return parseTracks(
+  return parseTrackListResponse(
     await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
 }

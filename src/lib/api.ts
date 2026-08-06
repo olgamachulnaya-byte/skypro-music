@@ -1,4 +1,4 @@
-import type { Track, TrackUser } from "@/data";
+import { tracksData, type Track, type TrackUser } from "@/data";
 import { getAccessToken } from "./auth";
 
 const API_URL = (
@@ -220,9 +220,19 @@ function parseTrackListResponse(value: unknown): Track[] {
 }
 
 export async function getTracks(): Promise<Track[]> {
-  return parseTrackListResponse(
-    await request<unknown>("/catalog/track/all/"),
-  );
+  try {
+    return parseTrackListResponse(
+      await request<unknown>("/catalog/track/all/"),
+    );
+  } catch {
+    // Keep the catalog usable when the training API is sleeping, unavailable,
+    // or temporarily returns a response from an incompatible API version.
+    return tracksData.map((track) => ({
+      ...track,
+      genre: [...track.genre],
+      stared_user: [...track.stared_user],
+    }));
+  }
 }
 
 export async function getSelection(id: string): Promise<Selection> {

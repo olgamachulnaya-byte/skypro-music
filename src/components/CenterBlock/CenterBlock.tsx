@@ -44,24 +44,27 @@ export default function CenterBlock({
     }
 
     const storeTracks = catalogTracksRef.current;
-    const [selection, availableTracks] = await Promise.all([
-      getSelection(selectionId),
-      storeTracks.length > 0 ? Promise.resolve(storeTracks) : getTracks(),
-    ]);
+     const selection = await getSelection(selectionId);
+    const selectionHasTrackIds = selection.items.every(
+      (item) => typeof item === "number" || typeof item === "string",
+    );
+
+    if (!selectionHasTrackIds) {
+      return { tracks: selection.items as Track[], title: selection.name };
+    }
+
+    const availableTracks =
+      storeTracks.length > 0 ? storeTracks : await getTracks();
     const tracksById = new Map(
       availableTracks.map((track) => [String(track._id), track]),
     );
     const selectionTracks = selection.items
-      .map((item) =>
-        typeof item === "number" || typeof item === "string"
-          ? tracksById.get(String(item))
-          : item,
-      )
+      .map((trackId) => tracksById.get(String(trackId)))
       .filter((track): track is Track => Boolean(track));
 
     if (storeTracks.length === 0) dispatch(setCatalogTracks(availableTracks));
-    if (selectionTracks.length !== selection.items.length) {
-      throw new Error("Не удалось найти все треки подборки");
+    if (selectionTracks.length === 0 && selection.items.length > 0) {
+      throw new Error("Не удалось найти треки подборки");
     }
 
     return { tracks: selectionTracks, title: selection.name };

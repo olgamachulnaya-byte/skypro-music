@@ -6,12 +6,14 @@ import {
   setCurrentTrack,
   setCurrentPlaylist,
   setIsPlaying,
+  updateFavorite,
 } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFavorite } from "@/lib/api";
 import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
+import { isTrackFavorite } from "@/lib/favorites";
 import styles from "./TrackItem.module.css";
 
 interface TrackItemProps {
@@ -26,27 +28,33 @@ function formatDuration(durationInSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function getFavoriteUserId(user: Track["stared_user"][number]): string | null {
-  if (typeof user === "string" || typeof user === "number") {
-    return String(user);
-  }
-
-  const id = user._id ?? user.id;
-  return typeof id === "string" || typeof id === "number" ? String(id) : null;
-}
-
 export default function TrackItem({ track, playlist }: TrackItemProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const userId = useSyncExternalStore(subscribeToAuthSession, getAuthUserId, () => null);
+ const userId = useSyncExternalStore(
+    subscribeToAuthSession,
+    getAuthUserId,
+    () => null,
+  );
   const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
-  const favorite =
-    favoriteOverride ??
-    (userId
-      ? track.stared_user.some((user) => getFavoriteUserId(user) === userId)
-      : false);
-  const [favoriteError, setFavoriteError] = useState(false);
-  const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
+   const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  const { currentTrack, currentPlaylist, catalogTracks, isPlaying } =
+    useAppSelector((state) => state.player);
+  const displayTrack =
+    currentPlaylist.find((item) => String(item._id) === String(track._id)) ??
+    catalogTracks.find((item) => String(item._id) === String(track._id)) ??
+    track;
+  const serverFavorite = isTrackFavorite(displayTrack, userId);
+  const favorite = favoriteOverride ?? serverFavorite;
+  const likesCount =
+    displayTrack.stared_user.length +
+    (favoriteOverride === null
+      ? 0
+      : favoriteOverride === serverFavorite
+        ? 0
+        : favoriteOverride
+          ? 1
+          : -1);
   const isCurrent = currentTrack?._id === track._id;
 
   const selectTrack = () => {
@@ -55,7 +63,7 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
       return;
     }
 
-    dispatch(setCurrentTrack(track));
+    dispatch(setCurrentTrack(displayTrack));
     dispatch(setCurrentPlaylist(playlist));
     dispatch(setIsPlaying(true));
   };
@@ -65,9 +73,20 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
     if (!userId) return router.push("/auth/signin");
     const next = !favorite;
     setFavoriteOverride(next);
-    setFavoriteError(false);
-    try { await toggleFavorite(track._id, next); }
-    catch { setFavoriteOverride(!next); setFavoriteError(true); }
+    setFavoriteError(null);
+
+    try {
+      await toggleFavorite(displayTrack._id, next);
+      dispatch(updateFavorite(displayTrack._id, userId, next));
+      setFavoriteOverride(null);
+    } catch (error: unknown) {
+      setFavoriteOverride(!next);
+      setFavoriteError(
+        error instanceof Error
+          ? error.message
+          : "Не удалось изменить избранное",
+      );
+    }
   };
   
   return (
@@ -88,28 +107,40 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
           </div>
           <div className={styles.track__titleText}>
            <Link href="#" className={styles.track__titleLink} onClick={(event) => event.preventDefault()}>
-              {track.name}
+              {displayTrack.name}
             </Link>
           </div>
         </div>
         <div className={styles.track__author}>
          <Link href="#" className={styles.track__authorLink} onClick={(event) => event.preventDefault()}>
-            {track.author}
+            {displayTrack.author}
           </Link>
         </div>
         <div className={styles.track__album}>
           <Link href="#" className={styles.track__albumLink} onClick={(event) => event.preventDefault()}>
-            {track.album}
+            {displayTrack.album}
           </Link>
         </div>
         <div className={styles.track__time}>
-          <button type="button" className={styles.favoriteButton} onClick={changeFavorite} aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"} title={favoriteError ? "Не удалось изменить избранное" : undefined}>
+            <button
+            type="button"
+            className={`${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ""}`}
+            onClick={changeFavorite}
+            aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+            title={favoriteError ?? undefined}
+          >
             <svg className={`${styles.track__timeSvg} ${favorite ? styles.favoriteActive : ""}`}>
               <use href="/img/icon/sprite.svg#icon-like" />
             </svg>
+             <span className={styles.favoriteCount}>{likesCount}</span>
           </button>
+            {favoriteError && (
+            <span className={styles.favoriteError} role="alert">
+              {favoriteError}
+            </span>
+          )}
           <span className={styles.track__timeText}>
-            {formatDuration(track.duration_in_seconds)}
+            {formatDuration(displayTrack.duration_in_seconds)}
           </span>
         </div>
       </div>

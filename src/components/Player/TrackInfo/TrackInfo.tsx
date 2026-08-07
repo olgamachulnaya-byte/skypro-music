@@ -1,54 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
 import type { Track } from "@/data";
-import { toggleFavorite } from "@/lib/api";
-import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
-import { isTrackFavorite } from "@/lib/favorites";
-import { updateFavorite } from "@/components/store/features/playerSlice";
-import { useAppDispatch } from "@/components/store/store";
+import { useFavoriteTrack } from "@/hooks/useFavoriteTrack";
 import styles from "./TrackInfo.module.css";
 
 export default function TrackInfo({ track }: { track: Track }) {
-  const dispatch = useAppDispatch();
-  const userId = useSyncExternalStore(subscribeToAuthSession, getAuthUserId, () => null);
-  const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
-  const [favoriteError, setFavoriteError] = useState<string | null>(null);
-  const favorite = favoriteOverride ?? isTrackFavorite(track, userId);
-  const likesCount =
-    track.stared_user.length +
-    (favoriteOverride === null
-      ? 0
-      : favoriteOverride === isTrackFavorite(track, userId)
-        ? 0
-        : favoriteOverride
-          ? 1
-          : -1);
-
-  const changeFavorite = async () => {
-    if (!userId) {
-      setFavoriteError("Войдите в аккаунт, чтобы добавить трек в избранное");
-      return;
-    }
-
-    const next = !favorite;
-    setFavoriteOverride(next);
-    setFavoriteError(null);
-
-    try {
-      await toggleFavorite(track._id, next);
-      dispatch(updateFavorite(track._id, userId, next));
-      setFavoriteOverride(null);
-    } catch (error: unknown) {
-      setFavoriteOverride(!next);
-      setFavoriteError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось изменить избранное",
-      );
-    }
-  };
+  const {
+    favorite,
+    likesCount,
+    error: favoriteError,
+    isUpdating,
+    changeFavorite,
+  } = useFavoriteTrack(track);
 
   return (
     <div className={styles.player__trackPlay}>
@@ -73,8 +37,10 @@ export default function TrackInfo({ track }: { track: Track }) {
         <button
           type="button"
           className={`${styles.trackPlay__like} ${styles.btnIcon} ${favorite ? styles.favoriteButtonActive : ""}`}
-          onClick={changeFavorite}
+          onClick={() => void changeFavorite()}
+          disabled={isUpdating}
           aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+          aria-busy={isUpdating}
           title={favoriteError ?? undefined}
         >
           <svg className={`${styles.trackPlay__likeSvg} ${favorite ? styles.favoriteActive : ""}`}>

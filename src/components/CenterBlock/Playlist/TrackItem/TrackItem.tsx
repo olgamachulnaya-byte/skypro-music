@@ -6,14 +6,10 @@ import {
   setCurrentTrack,
   setCurrentPlaylist,
   setIsPlaying,
-  updateFavorite,
 } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
-import { useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import { toggleFavorite } from "@/lib/api";
-import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
-import { isTrackFavorite } from "@/lib/favorites";
+import { useCallback } from "react";
+import { useFavoriteTrack } from "@/hooks/useFavoriteTrack";
 import styles from "./TrackItem.module.css";
 
 interface TrackItemProps {
@@ -35,35 +31,22 @@ export default function TrackItem({
   onFavoriteRemoved,
 }: TrackItemProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
- const userId = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthUserId,
-    () => null,
-  );
-  const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
-   const [favoriteError, setFavoriteError] = useState<string | null>(null);
-  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const { currentTrack, currentPlaylist, catalogTracks, isPlaying } =
     useAppSelector((state) => state.player);
   const displayTrack =
     currentPlaylist.find((item) => String(item._id) === String(track._id)) ??
     catalogTracks.find((item) => String(item._id) === String(track._id)) ??
     track;
-  const serverFavorite = isTrackFavorite(displayTrack, userId);
-  const favorite = favoriteOverride ?? serverFavorite;
-  const likesCount =
-    displayTrack.stared_user.length +
-    (favoriteOverride === null
-      ? 0
-      : favoriteOverride === serverFavorite
-        ? 0
-        : favoriteOverride
-          ? 1
-          : -1);
+  const {
+    favorite,
+    likesCount,
+    error: favoriteError,
+    isUpdating: isUpdatingFavorite,
+    changeFavorite,
+  } = useFavoriteTrack(displayTrack, { onRemoved: onFavoriteRemoved });
   const isCurrent = currentTrack?._id === track._id;
 
-  const selectTrack = () => {
+  const selectTrack = useCallback(() => {
     if (isCurrent) {
       dispatch(setIsPlaying(!isPlaying));
       return;
@@ -72,33 +55,12 @@ export default function TrackItem({
     dispatch(setCurrentTrack(displayTrack));
     dispatch(setCurrentPlaylist(playlist));
     dispatch(setIsPlaying(true));
-  };
+  }, [dispatch, displayTrack, isCurrent, isPlaying, playlist]);
 
-  const changeFavorite = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleFavoriteClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!userId) return router.push("/auth/signin");
-    if (isUpdatingFavorite) return;
-    const next = !favorite;
-    setFavoriteOverride(next);
-    setFavoriteError(null);
-    setIsUpdatingFavorite(true);
-
-    try {
-      await toggleFavorite(displayTrack._id, next);
-      dispatch(updateFavorite(displayTrack._id, userId, next));
-      setFavoriteOverride(null);
-      if (!next) onFavoriteRemoved?.(displayTrack._id);
-    } catch (error: unknown) {
-      setFavoriteOverride(null);
-      setFavoriteError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось изменить избранное",
-      );
-      } finally {
-      setIsUpdatingFavorite(false);
-    }
-  };
+     void changeFavorite();
+  }, [changeFavorite]);
   
   return (
     <div className={styles.playlist__item} onClick={selectTrack}>
@@ -136,7 +98,7 @@ export default function TrackItem({
             <button
             type="button"
             className={`${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ""}`}
-            onClick={changeFavorite}
+            onClick={handleFavoriteClick}
             disabled={isUpdatingFavorite}
             aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
             aria-busy={isUpdatingFavorite}

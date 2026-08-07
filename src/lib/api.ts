@@ -1,5 +1,10 @@
 import { tracksData, type Track, type TrackUser } from "@/data";
-import { clearAuthSession, getAccessToken } from "./auth";
+import {
+  clearAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  saveAccessToken,
+} from "./auth";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
@@ -117,7 +122,6 @@ async function request<T>(
     }
 
     if (!response.ok) {
-      if (authenticated && response.status === 401) clearAuthSession();
       throw new ApiError(errorMessage(body), response.status);
     }
     return body as T;
@@ -132,6 +136,54 @@ async function request<T>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refresh = getRefreshToken();
+  if (!refresh) {
+    throw new ApiError("Сессия истекла. Войдите в аккаунт снова", 401);
+  }
+
+  const response = unwrap(
+    await request<unknown>("/user/token/refresh/", {
+      method: "POST",
+      body: JSON.stringify({ refresh }),
+    }),
+  );
+
+  if (!isRecord(response) || typeof response.access !== "string") {
+    throw new ApiError("Сервер вернул некорректный токен авторизации", 0);
+  }
+
+  saveAccessToken(response.access);
+  return response.access;
+}
+
+/** Repeats an authorized operation once after renewing an expired access token. */
+export function withReAuth<Arguments extends unknown[], Result>(
+  authorizedRequest: (...args: Arguments) => Promise<Result>,
+): (...args: Arguments) => Promise<Result> {
+  return async (...args: Arguments): Promise<Result> => {
+    try {
+      return await authorizedRequest(...args);
+    } catch (error: unknown) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+
+      try {
+        refreshPromise ??= refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+        await refreshPromise;
+      } catch {
+        clearAuthSession();
+        throw new ApiError("Сессия истекла. Войдите в аккаунт снова", 401);
+      }
+
+      return authorizedRequest(...args);
+    }
+  };
 }
 
 function unwrap<T>(value: T | ApiEnvelope<T>): T {
@@ -327,18 +379,23 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
   };
 }
 
-export async function getFavoriteTracks(): Promise<Track[]> {
+const requestFavoriteTracks = async (): Promise<Track[]> => {
   return parseTrackListResponse(
     await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
-}
-export async function toggleFavorite(
+};
+
+export const getFavoriteTracks = withReAuth(requestFavoriteTracks);
+
+const requestToggleFavorite = async (
   trackId: string | number,
   favorite: boolean,
-): Promise<void> {
+): Promise<void> => {
   await request(
     `/catalog/track/${encodeURIComponent(String(trackId))}/favorite/`,
     { method: favorite ? "POST" : "DELETE" },
     true,
   );
-}
+};
+
+export const toggleFavorite = withReAuth(requestToggleFavorite);

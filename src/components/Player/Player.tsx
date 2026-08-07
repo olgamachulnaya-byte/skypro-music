@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Track } from "@/data";
 import PlayerControls from "./PlayerControls/PlayerControls";
@@ -56,20 +56,20 @@ export default function Player() {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [currentTrack, volume]);
 
-  const togglePlaying = () => {
+  const togglePlaying = useCallback(() => {
     if (currentTrack) dispatch(setIsPlaying(!isPlaying));
-  };
+  }, [currentTrack, dispatch, isPlaying]);
 
-  const selectAdjacentTrack = (direction: -1 | 1) => {
+ const selectAdjacentTrack = useCallback((direction: -1 | 1) => {
     const nextTrack = activePlaylist[currentIndex + direction];
     if (!nextTrack) return false;
 
     dispatch(setCurrentTrack(nextTrack));
     dispatch(setIsPlaying(true));
     return true;
-  };
+  }, [activePlaylist, currentIndex, dispatch]);
 
-  const toggleShuffle = () => {
+  const toggleShuffle = useCallback(() => {
     if (isShuffling) {
       setIsShuffling(false);
       setShuffledPlaylist([]);
@@ -92,25 +92,35 @@ export default function Player() {
       currentTrack ? [currentTrack, ...remainingTracks] : remainingTracks,
     );
     setIsShuffling(true);
-  };
+  }, [currentPlaylist, currentTrack, isShuffling]);
 
-  const seek = (value: number) => {
+  const seek = useCallback((value: number) => {
     if (audioRef.current) audioRef.current.currentTime = value;
     setCurrentTime(value);
-  };
+  }, []);
 
-  const changeVolume = (value: number) => {
+  const changeVolume = useCallback((value: number) => {
     if (audioRef.current) audioRef.current.volume = value;
     setVolume(value);
-  };
+  }, []);
 
-  const syncPlayingState = (playing: boolean) => {
+  const syncPlayingState = useCallback((playing: boolean) => {
     if (playing !== isPlaying) dispatch(setIsPlaying(playing));
-  };
+  }, [dispatch, isPlaying]);
 
-  const handleEnded = () => {
+  const handleEnded = useCallback(() => {
     if (!selectAdjacentTrack(1)) dispatch(setIsPlaying(false));
-  };
+  }, [dispatch, selectAdjacentTrack]);
+
+  const selectPreviousTrack = useCallback(() => {
+    selectAdjacentTrack(-1);
+  }, [selectAdjacentTrack]);
+  const selectNextTrack = useCallback(() => {
+    selectAdjacentTrack(1);
+  }, [selectAdjacentTrack]);
+  const toggleLoop = useCallback(() => {
+    setIsLooping((value) => !value);
+  }, []);
 
   if (!currentTrack) return null;
 
@@ -163,9 +173,9 @@ export default function Player() {
               canGoPrevious={canGoPrevious}
               canGoNext={canGoNext}
               onTogglePlaying={togglePlaying}
-              onPrevious={() => selectAdjacentTrack(-1)}
-              onNext={() => selectAdjacentTrack(1)}
-              onToggleLoop={() => setIsLooping((value) => !value)}
+              onPrevious={selectPreviousTrack}
+              onNext={selectNextTrack}
+              onToggleLoop={toggleLoop}
               onToggleShuffle={toggleShuffle}
             />
             <TrackInfo track={currentTrack} />

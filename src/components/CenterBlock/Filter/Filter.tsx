@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import classNames from "classnames";
-import { tracksData } from "@/data";
+import type { Track } from "@/data";
 import styles from "./Filter.module.css";
 
 type FilterName = "author" | "year" | "genre";
@@ -13,28 +13,48 @@ interface FilterConfig {
   options: readonly string[];
 }
 
+export interface TrackFilters {
+  author: string | null;
+  year: string | null;
+  genre: string | null;
+}
+
+interface FilterProps {
+  tracks: Track[];
+  value: TrackFilters;
+  onChange: (filters: TrackFilters) => void;
+}
+
 function getUniqueOptions(values: readonly string[]): string[] {
-  return Array.from(new Set(values)).sort((firstValue, secondValue) =>
-    firstValue.localeCompare(secondValue, "ru"),
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort(
+    (firstValue, secondValue) => firstValue.localeCompare(secondValue, "ru"),
   );
 }
 
-const uniqueAuthors = getUniqueOptions(tracksData.map((track) => track.author));
-const uniqueGenres = getUniqueOptions(tracksData.flatMap((track) => track.genre));
-
-
-const filters: FilterConfig[] = [
-  { name: "author", label: "исполнителю", options: uniqueAuthors },
-  {
-    name: "year",
-    label: "году выпуска",
-    options: ["По умолчанию", "Сначала новые", "Сначала старые"],
-  },
-  { name: "genre", label: "жанру", options: uniqueGenres },
-];
-
-export default function Filter() {
+export default function Filter({ tracks, value, onChange }: FilterProps) {
   const [activeFilter, setActiveFilter] = useState<FilterName | null>(null);
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        name: "author",
+        label: "исполнителю",
+        options: getUniqueOptions(tracks.map((track) => track.author)),
+      },
+      {
+        name: "year",
+        label: "году выпуска",
+        options: getUniqueOptions(
+          tracks.map((track) => track.release_date.slice(0, 4)),
+        ),
+      },
+      {
+        name: "genre",
+        label: "жанру",
+        options: getUniqueOptions(tracks.flatMap((track) => track.genre)),
+      },
+    ],
+    [tracks],
+  );
 
   const toggleFilter = (nameFilter: FilterName): void => {
     setActiveFilter((currentFilter) =>
@@ -65,8 +85,23 @@ export default function Filter() {
               aria-label={`Фильтр по ${label}`}
             >
               {options.map((option) => (
-                <li className={styles.filter__item} key={option}>
-                  {option}
+                <li key={option}>
+                  <button
+                    type="button"
+                    className={classNames(styles.filter__item, {
+                      [styles.selected]: value[name] === option,
+                    })}
+                    aria-pressed={value[name] === option}
+                    onClick={() => {
+                      onChange({
+                        ...value,
+                        [name]: value[name] === option ? null : option,
+                      });
+                      setActiveFilter(null);
+                    }}
+                  >
+                    {option}
+                  </button>
                 </li>
               ))}
             </ul>

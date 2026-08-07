@@ -1,7 +1,29 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import {
+  clearAuthSession,
+  getAuthEmail,
+  subscribeToAuthSession,
+} from "@/lib/auth";
 import styles from "./Header.module.css";
 
 export default function Header() {
+  const router = useRouter();
+  const email = useSyncExternalStore(
+    subscribeToAuthSession,
+    getAuthEmail,
+    () => null,
+  );
+
+  const signOut = () => {
+    clearAuthSession();
+    router.push("/auth/signin");
+  };
+
   return (
     <nav className={styles.main__nav}>
       <div className={styles.nav__logo}>
@@ -21,19 +43,25 @@ export default function Header() {
       <div className={styles.nav__menu}>
         <ul className={styles.menu__list}>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
+            <Link href="/" className={styles.menu__link}>
               Главное
-            </a>
+            </Link>
           </li>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
+            <Link href="/favorites" className={styles.menu__link}>
               Мой плейлист
-            </a>
+            </Link>
           </li>
           <li className={styles.menu__item}>
-            <a href="#" className={styles.menu__link}>
-              Войти
-            </a>
+            {email ? (
+              <button type="button" className={styles.menu__link} onClick={signOut}>
+                Выйти ({email})
+              </button>
+            ) : (
+              <Link href="/auth/signin" className={styles.menu__link}>
+                Войти
+              </Link>
+            )}
           </li>
         </ul>
       </div>

@@ -1,0 +1,15 @@
+.wrapper { min-height: 100vh; display: grid; place-items: center; background: rgba(0, 0, 0, .85); }
+.form { width: 366px; padding: 43px 44px 47px 40px; border-radius: 12px; background: #fff; display: flex; flex-direction: column; align-items: center; }
+.logo { width: 140px; height: 21px; margin-bottom: 34px; }
+.input { width: 100%; padding: 8px 1px; margin-bottom: 30px; border: 0; border-bottom: 1px solid #d0cece; color: #000; font-size: 18px; outline: none; }
+.input::placeholder { color: #d0cece; }
+.input:focus { border-color: #580ea2; }
+.error { width: 100%; margin: -12px 0 16px; color: #d10b0b; font-size: 13px; line-height: 18px; }
+.primaryButton, .secondaryButton { width: 278px; min-height: 52px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background-color .2s ease, opacity .2s ease; }
+.primaryButton { margin-top: 30px; border: 0; background: #580ea2; color: #fff; cursor: pointer; }
+.primaryButton:hover { background: #3f007d; }
+.primaryButton:active { background: #271a58; }
+.primaryButton:disabled { cursor: wait; opacity: .65; }
+.secondaryButton { margin-top: 20px; border: 1px solid #d0cece; color: #000; }
+.secondaryButton:hover { background: #f4f5f6; }
+@media (max-width: 420px) { .form { width: calc(100% - 32px); padding: 40px 28px; } .primaryButton, .secondaryButton { width: 100%; } }

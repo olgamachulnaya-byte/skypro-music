@@ -3,9 +3,9 @@ import styles from "./Sidebar.module.css";
 
 export default function Sidebar() {
   const playlists = [
-    { id: 1, src: "/img/playlist01.png", alt: "day's playlist" },
-    { id: 2, src: "/img/playlist02.png", alt: "day's playlist" },
-    { id: 3, src: "/img/playlist03.png", alt: "day's playlist" },
+   { id: 2, src: "/img/playlist01.png", alt: "Плейлист дня" },
+    { id: 3, src: "/img/playlist02.png", alt: "100 танцевальных хитов" },
+    { id: 4, src: "/img/playlist03.png", alt: "Инди-заряд" },
   ];
 
   return (
@@ -13,7 +13,7 @@ export default function Sidebar() {
       <div className={styles.sidebar__block}>
         <div className={styles.sidebar__list}>
           {playlists.map((playlist) => (
-            <SidebarItem key={playlist.id} {...playlist} />
+            <SidebarItem key={playlist.id} {...playlist} href={`/playlist/${playlist.id}`} />
           ))}
         </div>
       </div>

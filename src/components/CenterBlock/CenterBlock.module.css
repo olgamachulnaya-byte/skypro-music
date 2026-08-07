@@ -1,7 +1,37 @@
 .centerblock {
   width: auto;
   flex-grow: 3;
+  min-width: 0;
+  min-height: 0;
   padding: 20px 40px 20px 111px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.status {
+  padding: 48px 0;
+  color: #b1b1b1;
+  font-size: 18px;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.retryButton {
+  margin-top: 18px;
+  padding: 8px 20px;
+  border: 1px solid #ad61ff;
+  border-radius: 60px;
+  color: #ffffff;
+  font-size: 16px;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+.retryButton:hover {
+  background: #ad61ff;
+  color: #000000;
 }
 
 .centerblock__h2 {

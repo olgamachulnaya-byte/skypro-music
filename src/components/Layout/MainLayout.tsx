@@ -1,16 +1,15 @@
 import Header from "../Header/Header";
-import CenterBlock from "../CenterBlock/CenterBlock";
 import Sidebar from "../Sidebar/Sidebar";
 import Player from "../Player/Player";
 import styles from "./MainLayout.module.css";
 
-export default function MainLayout() {
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <main className={styles.main}>
           <Header />
-          <CenterBlock />
+          {children}
           <Sidebar />
         </main>
         <Player />

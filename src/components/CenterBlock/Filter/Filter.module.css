@@ -81,7 +81,16 @@
 }
 
 .filter__item {
+  padding: 0;
+  color: #ffffff;
   font-size: 16px;
   line-height: 24px;
   white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.filter__item:hover,
+.selected {
+  color: #b672ff;
+  text-decoration: underline;
 }

@@ -10,13 +10,14 @@
   height: 100vh;
   margin: 0 auto;
   position: relative;
+  overflow: hidden;
   background-color: #181818;
 }
 
 .main {
-  flex: 1 1 auto;
+  height: calc(100vh - 78px);
+  min-height: 0;
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
 }
 

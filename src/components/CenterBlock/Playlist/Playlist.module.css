@@ -1,10 +1,14 @@
 .centerblock__content {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .content__playlist {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }

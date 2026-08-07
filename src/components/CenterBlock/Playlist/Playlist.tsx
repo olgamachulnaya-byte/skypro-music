@@ -9,18 +9,20 @@ interface PlaylistProps {
 }
 
 export default function Playlist({ tracks, onFavoriteRemoved }: PlaylistProps) {
+  const renderTrack = (track: Track) => (
+    <TrackItem
+      key={track._id}
+      track={track}
+      playlist={tracks}
+      onFavoriteRemoved={onFavoriteRemoved}
+    />
+  );
   return (
     <div className={styles.centerblock__content}>
       <PlaylistHeader />
       <div className={styles.content__playlist}>
         {tracks.length === 0 && <p>Треки не найдены</p>}
-        {tracks.map((track) => (
-          <TrackItem
-            key={track._id}
-            track={track}
-            playlist={tracks}
-            onFavoriteRemoved={onFavoriteRemoved}
-          />
+       {tracks.map(renderTrack)}
       </div>
     </div>
   );

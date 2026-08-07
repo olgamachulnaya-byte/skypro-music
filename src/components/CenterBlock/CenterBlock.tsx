@@ -69,7 +69,7 @@ export default function CenterBlock({
 
     return { tracks: selectionTracks, title: selection.name };
   }, [dispatch, favorites, selectionId]);
-  const { tracks, title: apiTitle, isLoading, error, reload } =
+  const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
   const visibleTracks = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("ru");
@@ -104,7 +104,12 @@ export default function CenterBlock({
           </button>
         </div>
       )}
-      {!isLoading && !error && <Playlist tracks={visibleTracks} />}
+      {!isLoading && !error && (
+        <Playlist
+          tracks={visibleTracks}
+          onFavoriteRemoved={favorites ? removeTrack : undefined}
+        />
+      )}
     </div>
   );
 }

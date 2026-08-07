@@ -19,6 +19,7 @@ import styles from "./TrackItem.module.css";
 interface TrackItemProps {
   track: Track;
   playlist: Track[];
+  onFavoriteRemoved?: (trackId: Track["_id"]) => void;
 }
 
 function formatDuration(durationInSeconds: number): string {
@@ -28,7 +29,11 @@ function formatDuration(durationInSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export default function TrackItem({ track, playlist }: TrackItemProps) {
+export default function TrackItem({
+  track,
+  playlist,
+  onFavoriteRemoved,
+}: TrackItemProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
  const userId = useSyncExternalStore(
@@ -38,6 +43,7 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
   );
   const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
    const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const { currentTrack, currentPlaylist, catalogTracks, isPlaying } =
     useAppSelector((state) => state.player);
   const displayTrack =
@@ -71,21 +77,26 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
   const changeFavorite = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (!userId) return router.push("/auth/signin");
+    if (isUpdatingFavorite) return;
     const next = !favorite;
     setFavoriteOverride(next);
     setFavoriteError(null);
+    setIsUpdatingFavorite(true);
 
     try {
       await toggleFavorite(displayTrack._id, next);
       dispatch(updateFavorite(displayTrack._id, userId, next));
       setFavoriteOverride(null);
+      if (!next) onFavoriteRemoved?.(displayTrack._id);
     } catch (error: unknown) {
-      setFavoriteOverride(!next);
+      setFavoriteOverride(null);
       setFavoriteError(
         error instanceof Error
           ? error.message
           : "Не удалось изменить избранное",
       );
+      } finally {
+      setIsUpdatingFavorite(false);
     }
   };
   
@@ -126,7 +137,9 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
             type="button"
             className={`${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ""}`}
             onClick={changeFavorite}
+            disabled={isUpdatingFavorite}
             aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+            aria-busy={isUpdatingFavorite}
             title={favoriteError ?? undefined}
           >
             <svg className={`${styles.track__timeSvg} ${favorite ? styles.favoriteActive : ""}`}>

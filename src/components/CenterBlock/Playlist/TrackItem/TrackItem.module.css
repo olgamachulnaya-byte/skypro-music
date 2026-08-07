@@ -142,6 +142,12 @@
   transform: scale(1.08);
 }
 
+.favoriteButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+  transform: none;
+}
+
 .favoriteButtonActive {
   color: #ad61ff;
   animation: favorite-pop 0.25s ease;

@@ -9,6 +9,7 @@ interface TracksState {
   isLoading: boolean;
   error: string | null;
   reload: () => void;
+  removeTrack: (trackId: Track["_id"]) => void;
 }
 
 export interface TracksResult {
@@ -17,7 +18,7 @@ export interface TracksResult {
 }
 
 
-type TracksRequestState = Omit<TracksState, "reload">;
+type TracksRequestState = Omit<TracksState, "reload" | "removeTrack">;
 
 export function useTracks(loader: () => Promise<TracksResult>): TracksState {
   const [requestVersion, setRequestVersion] = useState(0);
@@ -61,6 +62,14 @@ export function useTracks(loader: () => Promise<TracksResult>): TracksState {
 
   return {
     ...state,
+    removeTrack: (trackId) => {
+      setState((current) => ({
+        ...current,
+        tracks: current.tracks.filter(
+          (track) => String(track._id) !== String(trackId),
+        ),
+      }));
+    },
     reload: () => {
       setState({ tracks: [], title: null, isLoading: true, error: null });
       setRequestVersion((version) => version + 1);

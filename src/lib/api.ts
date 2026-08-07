@@ -1,5 +1,5 @@
 import { tracksData, type Track, type TrackUser } from "@/data";
-import { getAccessToken } from "./auth";
+import { clearAuthSession, getAccessToken } from "./auth";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
@@ -116,7 +116,10 @@ async function request<T>(
       }
     }
 
-    if (!response.ok) throw new ApiError(errorMessage(body), response.status);
+    if (!response.ok) {
+      if (authenticated && response.status === 401) clearAuthSession();
+      throw new ApiError(errorMessage(body), response.status);
+    }
     return body as T;
   } catch (error: unknown) {
     if (error instanceof ApiError) throw error;

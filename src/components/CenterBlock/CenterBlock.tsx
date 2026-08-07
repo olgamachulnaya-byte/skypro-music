@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SearchBar from "./SearchBar/SearchBar";
 import Filter, { type TrackFilters } from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
@@ -9,6 +9,8 @@ import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
 import { getFavoriteTracks, getSelection, getTracks } from "@/lib/api";
 import { useTracks, type TracksResult } from "@/hooks/useTracks";
+import { setCatalogTracks } from "@/components/store/features/playerSlice";
+import { useAppDispatch, useAppSelector } from "@/components/store/store";
 
 export default function CenterBlock({
   selectionId,
@@ -19,24 +21,51 @@ export default function CenterBlock({
   favorites?: boolean;
   title?: string;
 }) {
+  const dispatch = useAppDispatch();
+  const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
+  const catalogTracksRef = useRef(catalogTracks);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<TrackFilters>({
     author: null,
     year: null,
     genre: null,
   });
-  const loader = useCallback(
-    (): Promise<TracksResult> =>
-       favorites
-        ? getFavoriteTracks().then((tracks) => ({ tracks }))
-        : selectionId
-        ? getSelection(selectionId).then((selection) => ({
-            tracks: selection.items,
-            title: selection.name,
-          }))
-        : getTracks().then((tracks: Track[]) => ({ tracks })),
-      [favorites, selectionId],
-  );
+  useEffect(() => {
+    catalogTracksRef.current = catalogTracks;
+  }, [catalogTracks]);
+
+  const loader = useCallback(async (): Promise<TracksResult> => {
+    if (favorites) return getFavoriteTracks().then((tracks) => ({ tracks }));
+
+    if (!selectionId) {
+      const tracks = await getTracks();
+      dispatch(setCatalogTracks(tracks));
+      return { tracks };
+    }
+
+    const storeTracks = catalogTracksRef.current;
+    const [selection, availableTracks] = await Promise.all([
+      getSelection(selectionId),
+      storeTracks.length > 0 ? Promise.resolve(storeTracks) : getTracks(),
+    ]);
+    const tracksById = new Map(
+      availableTracks.map((track) => [String(track._id), track]),
+    );
+    const selectionTracks = selection.items
+      .map((item) =>
+        typeof item === "number" || typeof item === "string"
+          ? tracksById.get(String(item))
+          : item,
+      )
+      .filter((track): track is Track => Boolean(track));
+
+    if (storeTracks.length === 0) dispatch(setCatalogTracks(availableTracks));
+    if (selectionTracks.length !== selection.items.length) {
+      throw new Error("Не удалось найти все треки подборки");
+    }
+
+    return { tracks: selectionTracks, title: selection.name };
+  }, [dispatch, favorites, selectionId]);
   const { tracks, title: apiTitle, isLoading, error, reload } =
     useTracks(loader);
   const visibleTracks = useMemo(() => {

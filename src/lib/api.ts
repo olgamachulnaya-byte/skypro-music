@@ -40,6 +40,12 @@ export interface Selection {
   items: Track[];
 }
 
+export interface SelectionTrackIds {
+  _id: string | number;
+  name: string;
+  items: Array<string | number>;
+}
+
 interface SelectionResponse extends Omit<Selection, "items"> {
   items: unknown[];
 }
@@ -235,7 +241,9 @@ export async function getTracks(): Promise<Track[]> {
   }
 }
 
-export async function getSelection(id: string): Promise<Selection> {
+export async function getSelection(
+  id: string,
+): Promise<SelectionTrackIds | Selection> {
   const selection = unwrap(
     await request<SelectionResponse | ApiEnvelope<SelectionResponse>>(
       `/catalog/selection/${encodeURIComponent(id)}/`,
@@ -256,14 +264,13 @@ export async function getSelection(id: string): Promise<Selection> {
     return { ...selection, items: selectionTracks };
   }
 
-  const tracks = await getTracks();
-  const tracksById = new Map(tracks.map((track) => [String(track._id), track]));
-  const items = selection.items.map((id) => tracksById.get(String(id)));
-  if (items.some((track) => !track)) {
-    throw new ApiError("Не удалось найти все треки подборки", 0);
+  if (
+    selection.items.every((id) => typeof id === "number" || typeof id === "string")
+  ) {
+    return { ...selection, items: selection.items };
   }
 
-  return { ...selection, items: items as Track[] };
+  throw new ApiError("Сервер вернул некорректную подборку", 0);
 }
 export async function signUp(credentials: Credentials): Promise<void> {
   await request<unknown>("/user/signup/", {

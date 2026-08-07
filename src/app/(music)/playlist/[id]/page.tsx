@@ -7,9 +7,9 @@ export default async function PlaylistPage({
 }) {
   const { id } = await params;
   const titles: Record<string, string> = {
-    "1": "Плейлист дня",
-    "2": "100 танцевальных хитов",
-    "3": "Инди-заряд",
+    "2": "Плейлист дня",
+    "3": "100 танцевальных хитов",
+    "4": "Инди-заряд",
   };
 
   return <CenterBlock selectionId={id} title={titles[id] ?? "Подборка"} />;

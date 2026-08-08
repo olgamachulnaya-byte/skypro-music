@@ -270,14 +270,18 @@ function parseTracks(value: unknown): Track[] {
  * Django REST Framework response used by the current catalog API.
  */
 function parseTrackListResponse(value: unknown): Track[] {
+ return parseTracks(extractTrackList(value));
+}
+
+function extractTrackList(value: unknown): unknown {
   const response = unwrap(value as unknown | ApiEnvelope<unknown>);
 
   if (isRecord(response)) {
-    if ("results" in response) return parseTracks(response.results);
-    if ("tracks" in response) return parseTracks(response.tracks);
+    if ("results" in response) return response.results;
+    if ("tracks" in response) return response.tracks;
   }
 
-  return parseTracks(response);
+  return response;
 }
 
 export async function getTracks(): Promise<Track[]> {
@@ -380,9 +384,45 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
 }
 
 const requestFavoriteTracks = async (): Promise<Track[]> => {
-  return parseTrackListResponse(
+  const response = extractTrackList(
     await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
+
+  if (!Array.isArray(response)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+
+  const parsedTracks = response.map(parseTrack);
+  if (parsedTracks.every((track): track is Track => track !== null)) {
+    return parsedTracks;
+  }
+
+  // Some API versions return only track ids (or shortened track objects) from
+  // the favorites endpoint. Hydrate those references from the catalog instead
+  // of rejecting a valid favorites response after a page reload.
+  const favoriteIds = response.map((item) => {
+    if (typeof item === "string" || typeof item === "number") return item;
+    if (!isRecord(item)) return null;
+
+    const id = item._id ?? item.id;
+    return typeof id === "string" || typeof id === "number" ? id : null;
+  });
+
+  if (favoriteIds.some((id) => id === null)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+
+  const catalog = await getTracks();
+  const tracksById = new Map(
+    catalog.map((track) => [String(track._id), track]),
+  );
+  const favorites = favoriteIds.map((id) => tracksById.get(String(id)));
+
+  if (favorites.some((track) => !track)) {
+    throw new ApiError("Не удалось найти треки из избранного в каталоге", 0);
+  }
+
+  return favorites as Track[];
 };
 
 export const getFavoriteTracks = withReAuth(requestFavoriteTracks);

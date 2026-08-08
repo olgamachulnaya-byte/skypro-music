@@ -5,6 +5,7 @@ import {
   getRefreshToken,
   saveAccessToken,
 } from "./auth";
+import { updateTrackFavoriteState } from "./favorites";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
@@ -426,6 +427,33 @@ const requestFavoriteTracks = async (): Promise<Track[]> => {
 };
 
 export const getFavoriteTracks = withReAuth(requestFavoriteTracks);
+
+/**
+ * Reconciles catalog data with the authenticated favorites endpoint.
+ *
+ * The public catalog response is not an authoritative source for the current
+ * user's likes. In particular, it can omit that relationship after a page
+ * reload even though the favorite was persisted successfully. The private
+ * endpoint remains the source of truth, so remove the current user from the
+ * catalog snapshot first and then add them back to the tracks returned there.
+ */
+export async function loadFavoriteState(
+  tracks: Track[],
+  userId: string,
+): Promise<Track[]> {
+  const favoriteTracks = await getFavoriteTracks();
+  const favoriteIds = new Set(
+    favoriteTracks.map((track) => String(track._id)),
+  );
+
+  return tracks.map((track) =>
+    updateTrackFavoriteState(
+      updateTrackFavoriteState(track, userId, false),
+      userId,
+      favoriteIds.has(String(track._id)),
+    ),
+  );
+}
 
 const requestToggleFavorite = async (
   trackId: string | number,

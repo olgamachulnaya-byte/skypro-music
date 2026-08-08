@@ -1,13 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+imimport {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import SearchBar from "./SearchBar/SearchBar";
 import Filter, { type TrackFilters } from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
-import { getFavoriteTracks, getSelection, getTracks } from "@/lib/api";
+import {
+  getFavoriteTracks,
+  getSelection,
+  getTracks,
+  loadFavoriteState,
+} from "@/lib/api";
+import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
 import { useTracks, type TracksResult } from "@/hooks/useTracks";
 import { setCatalogTracks } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
@@ -23,6 +36,11 @@ export default function CenterBlock({
 }) {
   const dispatch = useAppDispatch();
   const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
+  const userId = useSyncExternalStore(
+    subscribeToAuthSession,
+    getAuthUserId,
+    () => null,
+  );
   const catalogTracksRef = useRef(catalogTracks);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<TrackFilters>({
@@ -38,7 +56,10 @@ export default function CenterBlock({
     if (favorites) return getFavoriteTracks().then((tracks) => ({ tracks }));
 
     if (!selectionId) {
-      const tracks = await getTracks();
+      const catalog = await getTracks();
+      const tracks = userId
+        ? await loadFavoriteState(catalog, userId)
+        : catalog;
       dispatch(setCatalogTracks(tracks));
       return { tracks };
     }
@@ -50,7 +71,13 @@ export default function CenterBlock({
     );
 
     if (!selectionHasTrackIds) {
-      return { tracks: selection.items as Track[], title: selection.name };
+      const selectionTracks = selection.items as Track[];
+      return {
+        tracks: userId
+          ? await loadFavoriteState(selectionTracks, userId)
+          : selectionTracks,
+        title: selection.name,
+      };
     }
 
     const availableTracks =
@@ -67,8 +94,13 @@ export default function CenterBlock({
       throw new Error("Не удалось найти треки подборки");
     }
 
-    return { tracks: selectionTracks, title: selection.name };
-  }, [dispatch, favorites, selectionId]);
+    return {
+      tracks: userId
+        ? await loadFavoriteState(selectionTracks, userId)
+        : selectionTracks,
+      title: selection.name,
+    };
+  }, [dispatch, favorites, selectionId, userId]);
   const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
   const visibleTracks = useMemo(() => {

@@ -285,20 +285,28 @@ function extractTrackList(value: unknown): unknown {
   return response;
 }
 
-export async function getTracks(): Promise<Track[]> {
-  try {
-    return parseTrackListResponse(
-      await request<unknown>("/catalog/track/all/"),
-    );
-  } catch {
-    // Keep the catalog usable when the training API is sleeping, unavailable,
-    // or temporarily returns a response from an incompatible API version.
-    return tracksData.map((track) => ({
-      ...track,
-      genre: [...track.genre],
-      stared_user: [...track.stared_user],
-    }));
-  }
+let tracksRequest: Promise<Track[]> | null = null;
+
+export function getTracks(): Promise<Track[]> {
+  tracksRequest ??= (async () => {
+    try {
+      return parseTrackListResponse(
+        await request<unknown>("/catalog/track/all/"),
+      );
+    } catch {
+      // Keep the catalog usable when the training API is sleeping, unavailable,
+      // or temporarily returns a response from an incompatible API version.
+      return tracksData.map((track) => ({
+        ...track,
+        genre: [...track.genre],
+        stared_user: [...track.stared_user],
+      }));
+    }
+  })().finally(() => {
+    tracksRequest = null;
+  });
+
+  return tracksRequest;
 }
 
 export async function getSelection(
@@ -384,7 +392,7 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
   };
 }
 
-const requestFavoriteTracks = async (): Promise<Track[]> => {
+const requestFavoriteTracks = async (catalog?: Track[]): Promise<Track[]> => {
   const response = extractTrackList(
     await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
@@ -413,9 +421,9 @@ const requestFavoriteTracks = async (): Promise<Track[]> => {
     throw new ApiError("Сервер вернул некорректный список треков", 0);
   }
 
-  const catalog = await getTracks();
+  const availableTracks = catalog ?? (await getTracks());
   const tracksById = new Map(
-    catalog.map((track) => [String(track._id), track]),
+    availableTracks.map((track) => [String(track._id), track]),
   );
   return favoriteIds
     .map((id) => tracksById.get(String(id)))
@@ -437,7 +445,7 @@ export async function loadFavoriteState(
   tracks: Track[],
   userId: string,
 ): Promise<Track[]> {
-  const favoriteTracks = await getFavoriteTracks();
+  const favoriteTracks = await getFavoriteTracks(tracks);
   const favoriteIds = new Set(
     favoriteTracks.map((track) => String(track._id)),
   );

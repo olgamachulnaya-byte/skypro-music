@@ -417,13 +417,9 @@ const requestFavoriteTracks = async (): Promise<Track[]> => {
   const tracksById = new Map(
     catalog.map((track) => [String(track._id), track]),
   );
-  const favorites = favoriteIds.map((id) => tracksById.get(String(id)));
-
-  if (favorites.some((track) => !track)) {
-    throw new ApiError("Не удалось найти треки из избранного в каталоге", 0);
-  }
-
-  return favorites as Track[];
+  return favoriteIds
+    .map((id) => tracksById.get(String(id)))
+    .filter((track): track is Track => track !== undefined);
 };
 
 export const getFavoriteTracks = withReAuth(requestFavoriteTracks);

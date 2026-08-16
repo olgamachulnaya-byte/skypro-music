@@ -6,6 +6,7 @@ const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const SearchBar = require("../src/components/CenterBlock/SearchBar/SearchBar.tsx").default;
 const Filter = require("../src/components/CenterBlock/Filter/Filter.tsx").default;
+const Playlist = require("../src/components/CenterBlock/Playlist/Playlist.tsx").default;
 const PlaylistHeader = require("../src/components/CenterBlock/Playlist/PlaylistHeader/PlaylistHeader.tsx").default;
 
 test("SearchBar renders a controlled accessible search field", () => {
@@ -13,6 +14,16 @@ test("SearchBar renders a controlled accessible search field", () => {
   assert.match(html, /type="search"/);
   assert.match(html, /aria-label="Поиск по названию трека"/);
   assert.match(html, /value="сон"/);
+});
+
+test("SearchBar passes the entered search query to its consumer", () => {
+  let query = "";
+  const searchBar = SearchBar({ value: "", onChange(value) { query = value; } });
+  const input = searchBar.props.children[1];
+
+  input.props.onChange({ target: { value: "сол" } });
+
+  assert.equal(query, "сол");
 });
 
 test("Filter builds author and genre lists from original tracks", () => {
@@ -34,4 +45,11 @@ test("PlaylistHeader renders all playlist columns", () => {
   assert.match(html, /Трек/);
   assert.match(html, /Исполнитель/);
   assert.match(html, /Альбом/);
+});
+
+test("Playlist displays the empty-search message when no tracks match", () => {
+  const html = renderToStaticMarkup(React.createElement(Playlist, { tracks: [] }));
+
+  assert.match(html, /role="status"/);
+  assert.match(html, /Нет подходящих треков/);
 });

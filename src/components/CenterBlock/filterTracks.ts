@@ -1,26 +1,34 @@
-import type { Track } from "@/data";
+/** @typedef {"default" | "newest" | "oldest"} DateSort */
 
-export type DateSort = "default" | "newest" | "oldest";
+/**
+ * @typedef {object} TrackFilters
+ * @property {string | null} author
+ * @property {string | null} genre
+ * @property {DateSort} dateSort
+ */
 
-export interface TrackFilters {
-  author: string | null;
-  genre: string | null;
-  dateSort: DateSort;
-}
-
-export const DEFAULT_TRACK_FILTERS: TrackFilters = {
+/** @type {TrackFilters} */
+export const DEFAULT_TRACK_FILTERS = {
   author: null,
   genre: null,
   dateSort: "default",
 };
 
-export function getUniqueOptions(values: readonly string[]): string[] {
+/**
+ * @param {readonly string[]} values
+ * @returns {string[]}
+ */
+export function getUniqueOptions(values) {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort(
     (first, second) => first.localeCompare(second, "ru"),
   );
 }
 
-export function matchesTrackName(trackName: string, query: string): boolean {
+/**
+ * @param {string} trackName
+ * @param {string} query
+ */
+export function matchesTrackName(trackName, query) {
   const normalizedQuery = query.trim().toLocaleLowerCase("ru");
   return (
     normalizedQuery.length === 0 ||
@@ -28,10 +36,13 @@ export function matchesTrackName(trackName: string, query: string): boolean {
   );
 }
 
-export function sortTracksByDate(
-  tracks: readonly Track[],
-  dateSort: DateSort,
-): Track[] {
+/**
+ * @template {{ release_date: string }} T
+ * @param {readonly T[]} tracks
+ * @param {DateSort} dateSort
+ * @returns {T[]}
+ */
+export function sortTracksByDate(tracks, dateSort) {
   if (dateSort === "default") return [...tracks];
 
   const direction = dateSort === "newest" ? -1 : 1;
@@ -44,11 +55,14 @@ export function sortTracksByDate(
   });
 }
 
-export function filterTracks(
-  tracks: readonly Track[],
-  query: string,
-  filters: TrackFilters,
-): Track[] {
+/**
+ * @template {{ name: string, author: string, genre: string[], release_date: string }} T
+ * @param {readonly T[]} tracks
+ * @param {string} query
+ * @param {TrackFilters} filters
+ * @returns {T[]}
+ */
+export function filterTracks(tracks, query, filters) {
   const filteredTracks = tracks.filter(
     (track) =>
       matchesTrackName(track.name, query) &&
@@ -59,8 +73,11 @@ export function filterTracks(
   return sortTracksByDate(filteredTracks, filters.dateSort);
 }
 
-export function countActiveFilters(filters: TrackFilters): number {
-  return [filters.author, filters.genre, filters.dateSort !== "default"].filter(
-    Boolean,
-  ).length;
+/** @param {TrackFilters} filters */
+export function countActiveFilters(filters) {
+  return (
+    Number(Boolean(filters.author)) +
+    Number(Boolean(filters.genre)) +
+    Number(filters.dateSort !== "default")
+  );
 }

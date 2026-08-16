@@ -40,8 +40,26 @@ export default function CenterBlock({
   favorites?: boolean;
   title?: string;
 }) {
-  const dispatch = useAppDispatch();
   const pathname = usePathname();
+  return (
+    <CenterBlockContent
+      key={pathname}
+      selectionId={selectionId}
+      favorites={favorites}
+      title={title}
+    />
+  );
+}
+
+function CenterBlockContent({
+  selectionId,
+  favorites,
+  title,
+}: {
+  selectionId?: string;
+  favorites: boolean;
+  title: string;
+}) {
   const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
   const userId = useSyncExternalStore(
     subscribeToAuthSession,
@@ -51,12 +69,7 @@ export default function CenterBlock({
   const catalogTracksRef = useRef(catalogTracks);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<TrackFilters>(DEFAULT_TRACK_FILTERS);
-  const [filtersPathname, setFiltersPathname] = useState(pathname);
-  if (filtersPathname !== pathname) {
-    setFiltersPathname(pathname);
-    setSearch("");
-    setFilters(DEFAULT_TRACK_FILTERS);
-  }
+  
   useEffect(() => {
     catalogTracksRef.current = catalogTracks;
   }, [catalogTracks]);
@@ -74,7 +87,7 @@ export default function CenterBlock({
     }
 
     const storeTracks = catalogTracksRef.current;
-     const selection = await getSelection(selectionId);
+    const selection = await getSelection(selectionId);
     const selectionHasTrackIds = selection.items.every(
       (item) => typeof item === "number" || typeof item === "string",
     );
@@ -113,7 +126,7 @@ export default function CenterBlock({
   const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
   const visibleTracks = useMemo(() => {
-   return filterTracks(tracks, search, filters);
+  return filterTracks(tracks, search, filters);
   }, [filters, search, tracks]);
   
   return (

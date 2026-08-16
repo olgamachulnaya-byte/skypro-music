@@ -1,5 +1,3 @@
-require("./register.cjs");
-
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
@@ -8,7 +6,7 @@ const {
   getUniqueOptions,
   matchesTrackName,
   sortTracksByDate,
-} = require("../src/components/CenterBlock/filterTracks.ts");
+} = require("../src/components/CenterBlock/filterTracks.js");
 
 const track = (id, name, author, date, genre) => ({
   _id: id,
@@ -43,11 +41,19 @@ test("sortTracksByDate supports default, newest, oldest and invalid dates", () =
   assert.deepEqual(sortTracksByDate(tracks, "default").map((item) => item._id), [1, 2, 3]);
   assert.deepEqual(sortTracksByDate(tracks, "newest").map((item) => item._id), [2, 1, 3]);
   assert.deepEqual(sortTracksByDate(tracks, "oldest").map((item) => item._id), [3, 1, 2]);
+  assert.deepEqual(sortTracksByDate([tracks[2], tracks[0]], "newest").map((item) => item._id), [1, 3]);
+  assert.deepEqual(sortTracksByDate([tracks[0], tracks[2]], "oldest").map((item) => item._id), [3, 1]);
   assert.notEqual(sortTracksByDate(tracks, "default"), tracks);
 });
 
 test("filterTracks combines search, author, genre and sorting", () => {
-  const result = filterTracks(tracks, "со", {
+    assert.deepEqual(
+    filterTracks(tracks, "", { author: null, genre: null, dateSort: "default" }).map(
+      (item) => item._id,
+    ),
+    [1, 2, 3],
+  );
+    const result = filterTracks(tracks, "со", {
     author: "Анна",
     genre: "Поп",
     dateSort: "newest",

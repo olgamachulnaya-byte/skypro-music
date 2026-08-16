@@ -60,6 +60,7 @@ function CenterBlockContent({
   favorites: boolean;
   title: string;
 }) {
+  const dispatch = useAppDispatch();
   const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
   const userId = useSyncExternalStore(
     subscribeToAuthSession,
@@ -125,9 +126,10 @@ function CenterBlockContent({
   }, [dispatch, favorites, selectionId, userId]);
   const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
-  const visibleTracks = useMemo(() => {
-  return filterTracks(tracks, search, filters);
-  }, [filters, search, tracks]);
+  const visibleTracks = useMemo(
+    () => filterTracks(tracks, search, filters),
+    [filters, search, tracks],
+  );
   
   return (
     <div className={styles.centerblock}>

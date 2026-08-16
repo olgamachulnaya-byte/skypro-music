@@ -93,7 +93,8 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
                   <button
                     type="button"
                     className={classNames(styles.filter__item, {
-                      [styles.selected]: value[name] === optionValue(name, option),
+                      [styles.selected]:
+                        value[name] === optionValue(name, option),
                     })}
                     aria-pressed={value[name] === optionValue(name, option)}
                     onClick={() => {

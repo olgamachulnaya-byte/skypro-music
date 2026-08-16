@@ -9,7 +9,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import SearchBar from "./SearchBar/SearchBar";
-import Filter, { type TrackFilters } from "./Filter/Filter";
+import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
@@ -24,6 +24,12 @@ import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
 import { useTracks, type TracksResult } from "@/hooks/useTracks";
 import { setCatalogTracks } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
+import { usePathname } from "next/navigation";
+import {
+  DEFAULT_TRACK_FILTERS,
+  filterTracks,
+  type TrackFilters,
+} from "./filterTracks";
 
 export default function CenterBlock({
   selectionId,
@@ -35,6 +41,7 @@ export default function CenterBlock({
   title?: string;
 }) {
   const dispatch = useAppDispatch();
+  const pathname = usePathname();
   const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
   const userId = useSyncExternalStore(
     subscribeToAuthSession,
@@ -43,11 +50,13 @@ export default function CenterBlock({
   );
   const catalogTracksRef = useRef(catalogTracks);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<TrackFilters>({
-    author: null,
-    year: null,
-    genre: null,
-  });
+  const [filters, setFilters] = useState<TrackFilters>(DEFAULT_TRACK_FILTERS);
+  const [filtersPathname, setFiltersPathname] = useState(pathname);
+  if (filtersPathname !== pathname) {
+    setFiltersPathname(pathname);
+    setSearch("");
+    setFilters(DEFAULT_TRACK_FILTERS);
+  }
   useEffect(() => {
     catalogTracksRef.current = catalogTracks;
   }, [catalogTracks]);
@@ -104,25 +113,12 @@ export default function CenterBlock({
   const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
   const visibleTracks = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase("ru");
-
-    return tracks.filter((track) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        track.name.toLocaleLowerCase("ru").includes(normalizedSearch);
-      const matchesAuthor = !filters.author || track.author === filters.author;
-      const matchesYear =
-        !filters.year || track.release_date.slice(0, 4) === filters.year;
-      const matchesGenre =
-        !filters.genre || track.genre.includes(filters.genre);
-
-      return matchesSearch && matchesAuthor && matchesYear && matchesGenre;
-    });
+   return filterTracks(tracks, search, filters);
   }, [filters, search, tracks]);
   
   return (
     <div className={styles.centerblock}>
-       <SearchBar value={search} onChange={setSearch} />
+      <SearchBar value={search} onChange={setSearch} />
       <h2 className={styles.centerblock__h2}>{apiTitle ?? title}</h2>
       {!selectionId && !isLoading && !error && (
         <Filter tracks={tracks} value={filters} onChange={setFilters} />

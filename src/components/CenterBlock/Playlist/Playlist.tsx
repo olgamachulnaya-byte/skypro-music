@@ -21,8 +21,12 @@ export default function Playlist({ tracks, onFavoriteRemoved }: PlaylistProps) {
     <div className={styles.centerblock__content}>
       <PlaylistHeader />
       <div className={styles.content__playlist}>
-        {tracks.length === 0 && <p>Треки не найдены</p>}
-       {tracks.map(renderTrack)}
+        {tracks.length === 0 && (
+          <p className={styles.empty} role="status">
+            Нет подходящих треков
+          </p>
+        )}
+        {tracks.map(renderTrack)}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@
 }
 
 .filter__button {
+  position: relative;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -33,6 +34,32 @@
   background: transparent;
   color: #ffffff;
   transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.filter__count {
+  position: absolute;
+  top: -9px;
+  right: -7px;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #ad61ff;
+  font-size: 13px;
+}
+
+.filter__reset {
+  margin-left: 12px;
+  color: #b1b1b1;
+  font-size: 14px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.filter__reset:hover {
+  color: #ffffff;
 }
 
 .filter__button:hover {

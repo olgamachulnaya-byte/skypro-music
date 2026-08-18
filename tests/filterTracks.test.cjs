@@ -1,3 +1,5 @@
+require("./register.cjs");
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
@@ -6,7 +8,7 @@ const {
   getUniqueOptions,
   matchesTrackName,
   sortTracksByDate,
-} = require("../src/components/CenterBlock/filterTracks.js");
+} = require("../src/components/CenterBlock/filterTracks.ts");
 
 const track = (id, name, author, date, genre) => ({
   _id: id,

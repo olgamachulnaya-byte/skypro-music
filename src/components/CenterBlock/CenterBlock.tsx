@@ -135,7 +135,7 @@ function CenterBlockContent({
     <div className={styles.centerblock}>
       <SearchBar value={search} onChange={setSearch} />
       <h2 className={styles.centerblock__h2}>{apiTitle ?? title}</h2>
-      {!selectionId && !isLoading && !error && (
+       {!isLoading && !error && (
         <Filter tracks={tracks} value={filters} onChange={setFilters} />
       )}
       {isLoading && <TrackLoader />}

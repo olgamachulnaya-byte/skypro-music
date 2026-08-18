@@ -33,9 +33,11 @@ test("getUniqueOptions removes blanks and duplicates and sorts values", () => {
   assert.deepEqual(getUniqueOptions([" Рок ", "", "Поп", "Рок"]), ["Поп", "Рок"]);
 });
 
-test("matchesTrackName matches only the beginning, ignoring whitespace and case", () => {
+test("matchesTrackName finds a substring, ignoring whitespace and case", () => {
   assert.equal(matchesTrackName(" Солнечный свет", " сол "), true);
-  assert.equal(matchesTrackName("Солнечный свет", "свет"), false);
+  assert.equal(matchesTrackName("Солнечный свет", "свет"), true);
+  assert.equal(matchesTrackName("FooTroBar", "tro"), true);
+  assert.equal(matchesTrackName("Солнечный свет", "луна"), false);
   assert.equal(matchesTrackName("Солнечный свет", "   "), true);
 });
 

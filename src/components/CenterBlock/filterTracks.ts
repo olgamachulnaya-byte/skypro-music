@@ -29,7 +29,7 @@ export function matchesTrackName(trackName: string, query: string): boolean {
   const normalizedQuery = query.trim().toLocaleLowerCase("ru");
   return (
     normalizedQuery.length === 0 ||
-    trackName.trim().toLocaleLowerCase("ru").startsWith(normalizedQuery)
+    trackName.trim().toLocaleLowerCase("ru").includes(normalizedQuery)
   );
 }
 

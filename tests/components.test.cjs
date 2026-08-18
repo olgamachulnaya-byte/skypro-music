@@ -8,6 +8,7 @@ const SearchBar = require("../src/components/CenterBlock/SearchBar/SearchBar.tsx
 const Filter = require("../src/components/CenterBlock/Filter/Filter.tsx").default;
 const Playlist = require("../src/components/CenterBlock/Playlist/Playlist.tsx").default;
 const PlaylistHeader = require("../src/components/CenterBlock/Playlist/PlaylistHeader/PlaylistHeader.tsx").default;
+const TrackLoader = require("../src/components/CenterBlock/TrackLoader/TrackLoader.tsx").default;
 
 test("SearchBar renders a controlled accessible search field", () => {
   const html = renderToStaticMarkup(React.createElement(SearchBar, { value: "сон", onChange() {} }));
@@ -52,4 +53,14 @@ test("Playlist displays the empty-search message when no tracks match", () => {
 
   assert.match(html, /role="status"/);
   assert.match(html, /Нет подходящих треков/);
+});
+
+test("TrackLoader renders an accessible animated playlist placeholder", () => {
+  const html = renderToStaticMarkup(React.createElement(TrackLoader));
+
+  assert.match(html, /role="status"/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, /Загрузка треков/);
+  assert.match(html, /Трек/);
+  assert.equal((html.match(/aria-hidden="true"/g) ?? []).length, 1);
 });

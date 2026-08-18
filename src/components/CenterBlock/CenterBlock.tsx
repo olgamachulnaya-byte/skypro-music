@@ -1,16 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import SearchBar from "./SearchBar/SearchBar";
-import Filter, { type TrackFilters } from "./Filter/Filter";
+import Filter from "./Filter/Filter";
 import Playlist from "./Playlist/Playlist";
 import TrackLoader from "./TrackLoader/TrackLoader";
 import styles from "./CenterBlock.module.css";
 import type { Track } from "@/data";
-import { getFavoriteTracks, getSelection, getTracks } from "@/lib/api";
+import {
+  getFavoriteTracks,
+  getSelection,
+  getTracks,
+  loadFavoriteState,
+} from "@/lib/api";
+import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
 import { useTracks, type TracksResult } from "@/hooks/useTracks";
 import { setCatalogTracks } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
+import { usePathname } from "next/navigation";
+import {
+  DEFAULT_TRACK_FILTERS,
+  filterTracks,
+  type TrackFilters,
+} from "./filterTracks";
 
 export default function CenterBlock({
   selectionId,
@@ -21,15 +40,37 @@ export default function CenterBlock({
   favorites?: boolean;
   title?: string;
 }) {
+  const pathname = usePathname();
+  return (
+    <CenterBlockContent
+      key={pathname}
+      selectionId={selectionId}
+      favorites={favorites}
+      title={title}
+    />
+  );
+}
+
+function CenterBlockContent({
+  selectionId,
+  favorites,
+  title,
+}: {
+  selectionId?: string;
+  favorites: boolean;
+  title: string;
+}) {
   const dispatch = useAppDispatch();
   const catalogTracks = useAppSelector((state) => state.player.catalogTracks);
+  const userId = useSyncExternalStore(
+    subscribeToAuthSession,
+    getAuthUserId,
+    () => null,
+  );
   const catalogTracksRef = useRef(catalogTracks);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<TrackFilters>({
-    author: null,
-    year: null,
-    genre: null,
-  });
+  const [filters, setFilters] = useState<TrackFilters>(DEFAULT_TRACK_FILTERS);
+  
   useEffect(() => {
     catalogTracksRef.current = catalogTracks;
   }, [catalogTracks]);
@@ -38,19 +79,28 @@ export default function CenterBlock({
     if (favorites) return getFavoriteTracks().then((tracks) => ({ tracks }));
 
     if (!selectionId) {
-      const tracks = await getTracks();
+      const catalog = await getTracks();
+      const tracks = userId
+        ? await loadFavoriteState(catalog, userId)
+        : catalog;
       dispatch(setCatalogTracks(tracks));
       return { tracks };
     }
 
     const storeTracks = catalogTracksRef.current;
-     const selection = await getSelection(selectionId);
+    const selection = await getSelection(selectionId);
     const selectionHasTrackIds = selection.items.every(
       (item) => typeof item === "number" || typeof item === "string",
     );
 
     if (!selectionHasTrackIds) {
-      return { tracks: selection.items as Track[], title: selection.name };
+      const selectionTracks = selection.items as Track[];
+      return {
+        tracks: userId
+          ? await loadFavoriteState(selectionTracks, userId)
+          : selectionTracks,
+        title: selection.name,
+      };
     }
 
     const availableTracks =
@@ -67,32 +117,25 @@ export default function CenterBlock({
       throw new Error("Не удалось найти треки подборки");
     }
 
-    return { tracks: selectionTracks, title: selection.name };
-  }, [dispatch, favorites, selectionId]);
-  const { tracks, title: apiTitle, isLoading, error, reload } =
+    return {
+      tracks: userId
+        ? await loadFavoriteState(selectionTracks, userId)
+        : selectionTracks,
+      title: selection.name,
+    };
+  }, [dispatch, favorites, selectionId, userId]);
+  const { tracks, title: apiTitle, isLoading, error, reload, removeTrack } =
     useTracks(loader);
-  const visibleTracks = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase("ru");
-
-    return tracks.filter((track) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        track.name.toLocaleLowerCase("ru").includes(normalizedSearch);
-      const matchesAuthor = !filters.author || track.author === filters.author;
-      const matchesYear =
-        !filters.year || track.release_date.slice(0, 4) === filters.year;
-      const matchesGenre =
-        !filters.genre || track.genre.includes(filters.genre);
-
-      return matchesSearch && matchesAuthor && matchesYear && matchesGenre;
-    });
-  }, [filters, search, tracks]);
+  const visibleTracks = useMemo(
+    () => filterTracks(tracks, search, filters),
+    [filters, search, tracks],
+  );
   
   return (
     <div className={styles.centerblock}>
-       <SearchBar value={search} onChange={setSearch} />
+      <SearchBar value={search} onChange={setSearch} />
       <h2 className={styles.centerblock__h2}>{apiTitle ?? title}</h2>
-      {!selectionId && !isLoading && !error && (
+       {!isLoading && !error && (
         <Filter tracks={tracks} value={filters} onChange={setFilters} />
       )}
       {isLoading && <TrackLoader />}
@@ -104,7 +147,12 @@ export default function CenterBlock({
           </button>
         </div>
       )}
-      {!isLoading && !error && <Playlist tracks={visibleTracks} />}
+      {!isLoading && !error && (
+        <Playlist
+          tracks={visibleTracks}
+          onFavoriteRemoved={favorites ? removeTrack : undefined}
+        />
+      )}
     </div>
   );
 }

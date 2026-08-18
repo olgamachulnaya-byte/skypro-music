@@ -1,0 +1,55 @@
+.centerblock {
+  width: auto;
+  flex-grow: 3;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px 40px 20px 111px;
+  overflow: hidden;
+}
+
+.shimmer {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(100deg, #313131 30%, #414141 50%, #313131 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.search {
+  width: min(100%, 420px);
+  height: 24px;
+  margin: 8px 0 55px;
+}
+
+.heading {
+  width: min(55%, 360px);
+  height: 64px;
+  margin-bottom: 45px;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 51px;
+}
+
+.filter {
+  width: 144px;
+  height: 39px;
+  border-radius: 60px;
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@media (max-width: 760px) {
+  .centerblock { padding: 20px; }
+  .heading { width: 70%; }
+  .filter { width: 100px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}

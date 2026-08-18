@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   clearAuthSession,
   getAuthEmail,
@@ -13,6 +13,7 @@ import styles from "./Header.module.css";
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const email = useSyncExternalStore(
     subscribeToAuthSession,
     getAuthEmail,
@@ -21,7 +22,9 @@ export default function Header() {
 
   const signOut = () => {
     clearAuthSession();
-    router.push("/auth/signin");
+     // The favorites page is private, so it must not remain in the history
+    // after its access token has been removed.
+    router.replace(pathname === "/favorites" ? "/" : "/auth/signin");
   };
 
   return (

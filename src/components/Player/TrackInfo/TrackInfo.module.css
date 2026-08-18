@@ -111,3 +111,60 @@
   stroke: #ffffff;
   cursor: pointer;
 }
+.trackPlay__like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #696969;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.trackPlay__like:hover {
+  color: #acacac;
+  transform: scale(1.08);
+}
+
+.trackPlay__like:disabled {
+  cursor: wait;
+  opacity: 0.6;
+  transform: none;
+}
+
+.favoriteButtonActive {
+  color: #ad61ff;
+  animation: favorite-pop 0.25s ease;
+}
+
+.favoriteActive {
+  fill: #ad61ff;
+  stroke: #ad61ff;
+}
+
+.favoriteCount {
+  min-width: 1ch;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.favoriteError {
+  margin: 0 0 0 16px;
+  color: #ff6b6b;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+@keyframes favorite-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}

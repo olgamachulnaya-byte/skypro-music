@@ -1,5 +1,11 @@
 import { tracksData, type Track, type TrackUser } from "@/data";
-import { getAccessToken } from "./auth";
+import {
+  clearAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  saveAccessToken,
+} from "./auth";
+import { updateTrackFavoriteState } from "./favorites";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
@@ -116,7 +122,9 @@ async function request<T>(
       }
     }
 
-    if (!response.ok) throw new ApiError(errorMessage(body), response.status);
+    if (!response.ok) {
+      throw new ApiError(errorMessage(body), response.status);
+    }
     return body as T;
   } catch (error: unknown) {
     if (error instanceof ApiError) throw error;
@@ -129,6 +137,54 @@ async function request<T>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refresh = getRefreshToken();
+  if (!refresh) {
+    throw new ApiError("Сессия истекла. Войдите в аккаунт снова", 401);
+  }
+
+  const response = unwrap(
+    await request<unknown>("/user/token/refresh/", {
+      method: "POST",
+      body: JSON.stringify({ refresh }),
+    }),
+  );
+
+  if (!isRecord(response) || typeof response.access !== "string") {
+    throw new ApiError("Сервер вернул некорректный токен авторизации", 0);
+  }
+
+  saveAccessToken(response.access);
+  return response.access;
+}
+
+/** Repeats an authorized operation once after renewing an expired access token. */
+export function withReAuth<Arguments extends unknown[], Result>(
+  authorizedRequest: (...args: Arguments) => Promise<Result>,
+): (...args: Arguments) => Promise<Result> {
+  return async (...args: Arguments): Promise<Result> => {
+    try {
+      return await authorizedRequest(...args);
+    } catch (error: unknown) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+
+      try {
+        refreshPromise ??= refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+        await refreshPromise;
+      } catch {
+        clearAuthSession();
+        throw new ApiError("Сессия истекла. Войдите в аккаунт снова", 401);
+      }
+
+      return authorizedRequest(...args);
+    }
+  };
 }
 
 function unwrap<T>(value: T | ApiEnvelope<T>): T {
@@ -215,30 +271,45 @@ function parseTracks(value: unknown): Track[] {
  * Django REST Framework response used by the current catalog API.
  */
 function parseTrackListResponse(value: unknown): Track[] {
+ return parseTracks(extractTrackList(value));
+}
+
+function extractTrackList(value: unknown): unknown {
   const response = unwrap(value as unknown | ApiEnvelope<unknown>);
 
   if (isRecord(response)) {
-    if ("results" in response) return parseTracks(response.results);
-    if ("tracks" in response) return parseTracks(response.tracks);
+    if ("results" in response) return response.results;
+    if ("tracks" in response) return response.tracks;
   }
 
-  return parseTracks(response);
+  return response;
 }
 
-export async function getTracks(): Promise<Track[]> {
-  try {
-    return parseTrackListResponse(
-      await request<unknown>("/catalog/track/all/"),
-    );
-  } catch {
-    // Keep the catalog usable when the training API is sleeping, unavailable,
-    // or temporarily returns a response from an incompatible API version.
-    return tracksData.map((track) => ({
-      ...track,
-      genre: [...track.genre],
-      stared_user: [...track.stared_user],
-    }));
-  }
+let tracksRequest: Promise<Track[]> | null = null;
+
+export function getTracks(): Promise<Track[]> {
+  tracksRequest ??= request<unknown>("/catalog/track/all/")
+    .then(parseTrackListResponse)
+    .catch((error: unknown) => {
+      if (
+        error instanceof ApiError &&
+        error.status === 0 &&
+        error.message === "Сервер вернул некорректный список треков"
+      ) {
+        return tracksData.map((track) => ({
+          ...track,
+          genre: [...track.genre],
+          stared_user: [...track.stared_user],
+        }));
+      }
+
+      throw error;
+    })
+    .finally(() => {
+      tracksRequest = null;
+    });
+
+  return tracksRequest;
 }
 
 export async function getSelection(
@@ -324,18 +395,82 @@ export async function signIn(credentials: Credentials): Promise<AuthResult> {
   };
 }
 
-export async function getFavoriteTracks(): Promise<Track[]> {
-  return parseTrackListResponse(
+const requestFavoriteTracks = async (catalog?: Track[]): Promise<Track[]> => {
+  const response = extractTrackList(
     await request<unknown>("/catalog/track/favorite/all/", {}, true),
   );
+
+  if (!Array.isArray(response)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+
+  const parsedTracks = response.map(parseTrack);
+  if (parsedTracks.every((track): track is Track => track !== null)) {
+    return parsedTracks;
+  }
+
+  // Some API versions return only track ids (or shortened track objects) from
+  // the favorites endpoint. Hydrate those references from the catalog instead
+  // of rejecting a valid favorites response after a page reload.
+  const favoriteIds = response.map((item) => {
+    if (typeof item === "string" || typeof item === "number") return item;
+    if (!isRecord(item)) return null;
+
+    const id = item._id ?? item.id;
+    return typeof id === "string" || typeof id === "number" ? id : null;
+  });
+
+  if (favoriteIds.some((id) => id === null)) {
+    throw new ApiError("Сервер вернул некорректный список треков", 0);
+  }
+
+  const availableTracks = catalog ?? (await getTracks());
+  const tracksById = new Map(
+    availableTracks.map((track) => [String(track._id), track]),
+  );
+  return favoriteIds
+    .map((id) => tracksById.get(String(id)))
+    .filter((track): track is Track => track !== undefined);
+};
+
+export const getFavoriteTracks = withReAuth(requestFavoriteTracks);
+
+/**
+ * Reconciles catalog data with the authenticated favorites endpoint.
+ *
+ * The public catalog response is not an authoritative source for the current
+ * user's likes. In particular, it can omit that relationship after a page
+ * reload even though the favorite was persisted successfully. The private
+ * endpoint remains the source of truth, so remove the current user from the
+ * catalog snapshot first and then add them back to the tracks returned there.
+ */
+export async function loadFavoriteState(
+  tracks: Track[],
+  userId: string,
+): Promise<Track[]> {
+  const favoriteTracks = await getFavoriteTracks(tracks);
+  const favoriteIds = new Set(
+    favoriteTracks.map((track) => String(track._id)),
+  );
+
+  return tracks.map((track) =>
+    updateTrackFavoriteState(
+      updateTrackFavoriteState(track, userId, false),
+      userId,
+      favoriteIds.has(String(track._id)),
+    ),
+  );
 }
-export async function toggleFavorite(
+
+const requestToggleFavorite = async (
   trackId: string | number,
   favorite: boolean,
-): Promise<void> {
+): Promise<void> => {
   await request(
     `/catalog/track/${encodeURIComponent(String(trackId))}/favorite/`,
     { method: favorite ? "POST" : "DELETE" },
     true,
   );
-}
+};
+
+export const toggleFavorite = withReAuth(requestToggleFavorite);

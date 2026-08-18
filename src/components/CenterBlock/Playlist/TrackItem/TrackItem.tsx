@@ -8,15 +8,14 @@ import {
   setIsPlaying,
 } from "@/components/store/features/playerSlice";
 import { useAppDispatch, useAppSelector } from "@/components/store/store";
-import { useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import { toggleFavorite } from "@/lib/api";
-import { getAuthUserId, subscribeToAuthSession } from "@/lib/auth";
+import { useCallback } from "react";
+import { useFavoriteTrack } from "@/hooks/useFavoriteTrack";
 import styles from "./TrackItem.module.css";
 
 interface TrackItemProps {
   track: Track;
   playlist: Track[];
+  onFavoriteRemoved?: (trackId: Track["_id"]) => void;
 }
 
 function formatDuration(durationInSeconds: number): string {
@@ -26,49 +25,42 @@ function formatDuration(durationInSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function getFavoriteUserId(user: Track["stared_user"][number]): string | null {
-  if (typeof user === "string" || typeof user === "number") {
-    return String(user);
-  }
-
-  const id = user._id ?? user.id;
-  return typeof id === "string" || typeof id === "number" ? String(id) : null;
-}
-
-export default function TrackItem({ track, playlist }: TrackItemProps) {
+export default function TrackItem({
+  track,
+  playlist,
+  onFavoriteRemoved,
+}: TrackItemProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const userId = useSyncExternalStore(subscribeToAuthSession, getAuthUserId, () => null);
-  const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
-  const favorite =
-    favoriteOverride ??
-    (userId
-      ? track.stared_user.some((user) => getFavoriteUserId(user) === userId)
-      : false);
-  const [favoriteError, setFavoriteError] = useState(false);
-  const { currentTrack, isPlaying } = useAppSelector((state) => state.player);
+  const { currentTrack, currentPlaylist, catalogTracks, isPlaying } =
+    useAppSelector((state) => state.player);
+  const displayTrack =
+    currentPlaylist.find((item) => String(item._id) === String(track._id)) ??
+    catalogTracks.find((item) => String(item._id) === String(track._id)) ??
+    track;
+  const {
+    favorite,
+    likesCount,
+    error: favoriteError,
+    isUpdating: isUpdatingFavorite,
+    changeFavorite,
+  } = useFavoriteTrack(displayTrack, { onRemoved: onFavoriteRemoved });
   const isCurrent = currentTrack?._id === track._id;
 
-  const selectTrack = () => {
+  const selectTrack = useCallback(() => {
     if (isCurrent) {
       dispatch(setIsPlaying(!isPlaying));
       return;
     }
 
-    dispatch(setCurrentTrack(track));
+    dispatch(setCurrentTrack(displayTrack));
     dispatch(setCurrentPlaylist(playlist));
     dispatch(setIsPlaying(true));
-  };
+  }, [dispatch, displayTrack, isCurrent, isPlaying, playlist]);
 
-  const changeFavorite = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleFavoriteClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!userId) return router.push("/auth/signin");
-    const next = !favorite;
-    setFavoriteOverride(next);
-    setFavoriteError(false);
-    try { await toggleFavorite(track._id, next); }
-    catch { setFavoriteOverride(!next); setFavoriteError(true); }
-  };
+     void changeFavorite();
+  }, [changeFavorite]);
   
   return (
     <div className={styles.playlist__item} onClick={selectTrack}>
@@ -88,28 +80,42 @@ export default function TrackItem({ track, playlist }: TrackItemProps) {
           </div>
           <div className={styles.track__titleText}>
            <Link href="#" className={styles.track__titleLink} onClick={(event) => event.preventDefault()}>
-              {track.name}
+              {displayTrack.name}
             </Link>
           </div>
         </div>
         <div className={styles.track__author}>
          <Link href="#" className={styles.track__authorLink} onClick={(event) => event.preventDefault()}>
-            {track.author}
+            {displayTrack.author}
           </Link>
         </div>
         <div className={styles.track__album}>
           <Link href="#" className={styles.track__albumLink} onClick={(event) => event.preventDefault()}>
-            {track.album}
+            {displayTrack.album}
           </Link>
         </div>
         <div className={styles.track__time}>
-          <button type="button" className={styles.favoriteButton} onClick={changeFavorite} aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"} title={favoriteError ? "Не удалось изменить избранное" : undefined}>
+            <button
+            type="button"
+            className={`${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ""}`}
+            onClick={handleFavoriteClick}
+            disabled={isUpdatingFavorite}
+            aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+            aria-busy={isUpdatingFavorite}
+            title={favoriteError ?? undefined}
+          >
             <svg className={`${styles.track__timeSvg} ${favorite ? styles.favoriteActive : ""}`}>
               <use href="/img/icon/sprite.svg#icon-like" />
             </svg>
+             <span className={styles.favoriteCount}>{likesCount}</span>
           </button>
+            {favoriteError && (
+            <span className={styles.favoriteError} role="alert">
+              {favoriteError}
+            </span>
+          )}
           <span className={styles.track__timeText}>
-            {formatDuration(track.duration_in_seconds)}
+            {formatDuration(displayTrack.duration_in_seconds)}
           </span>
         </div>
       </div>

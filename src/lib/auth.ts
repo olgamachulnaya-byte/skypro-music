@@ -45,6 +45,18 @@ export function getAccessToken(): string | null {
   return getStorage()?.getItem(ACCESS_TOKEN_KEY) ?? null;
 }
 
+export function getRefreshToken(): string | null {
+  return getStorage()?.getItem(REFRESH_TOKEN_KEY) ?? null;
+}
+
+export function saveAccessToken(accessToken: string): void {
+  const storage = getStorage();
+  if (!storage) return;
+
+  storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
+}
+
 export function getAuthUserId(): string | null {
   return getStorage()?.getItem(USER_ID_KEY) ?? null;
 }

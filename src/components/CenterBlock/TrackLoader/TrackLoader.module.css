@@ -1,4 +1,9 @@
 .loader {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rows {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -39,4 +44,21 @@
 
 @media (prefers-reduced-motion: reduce) {
   .shimmer { animation: none; }
+}
+
+@media (max-width: 1100px) {
+  .row {
+    grid-template-columns: 51px minmax(140px, 1.3fr) minmax(120px, 1fr) 45px;
+  }
+
+  .album { display: none; }
+}
+
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: 51px minmax(120px, 1fr) 45px;
+    gap: 12px;
+  }
+
+  .author { display: none; }
 }

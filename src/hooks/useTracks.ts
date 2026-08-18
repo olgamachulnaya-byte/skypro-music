@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Track } from "@/data";
 
 interface TracksState {
@@ -9,6 +9,7 @@ interface TracksState {
   isLoading: boolean;
   error: string | null;
   reload: () => void;
+  removeTrack: (trackId: Track["_id"]) => void;
 }
 
 export interface TracksResult {
@@ -17,7 +18,7 @@ export interface TracksResult {
 }
 
 
-type TracksRequestState = Omit<TracksState, "reload">;
+type TracksRequestState = Omit<TracksState, "reload" | "removeTrack">;
 
 export function useTracks(loader: () => Promise<TracksResult>): TracksState {
   const [requestVersion, setRequestVersion] = useState(0);
@@ -59,11 +60,22 @@ export function useTracks(loader: () => Promise<TracksResult>): TracksState {
     };
   }, [loader, requestVersion]);
 
-  return {
-    ...state,
-    reload: () => {
-      setState({ tracks: [], title: null, isLoading: true, error: null });
-      setRequestVersion((version) => version + 1);
-    },
-  };
+  const removeTrack = useCallback((trackId: Track["_id"]) => {
+      setState((current) => ({
+        ...current,
+        tracks: current.tracks.filter(
+          (track) => String(track._id) !== String(trackId),
+        ),
+      }));
+   }, []);
+
+  const reload = useCallback(() => {
+    setState({ tracks: [], title: null, isLoading: true, error: null });
+    setRequestVersion((version) => version + 1);
+  }, []);
+
+  return useMemo(
+    () => ({ ...state, removeTrack, reload }),
+    [reload, removeTrack, state],
+  );
 }

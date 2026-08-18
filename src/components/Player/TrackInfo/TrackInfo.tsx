@@ -1,8 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import styles from "./TrackInfo.module.css";
 import type { Track } from "@/data";
+import { useFavoriteTrack } from "@/hooks/useFavoriteTrack";
+import styles from "./TrackInfo.module.css";
 
 export default function TrackInfo({ track }: { track: Track }) {
+  const {
+    favorite,
+    likesCount,
+    error: favoriteError,
+    isUpdating,
+    changeFavorite,
+  } = useFavoriteTrack(track);
+
   return (
     <div className={styles.player__trackPlay}>
       <div className={styles.trackPlay__contain}>
@@ -23,17 +34,31 @@ export default function TrackInfo({ track }: { track: Track }) {
         </div>
       </div>
       <div className={styles.trackPlay__actions}>
-        <div className={`${styles.trackPlay__like} ${styles.btnIcon}`}>
-          <svg className={styles.trackPlay__likeSvg}>
+        <button
+          type="button"
+          className={`${styles.trackPlay__like} ${styles.btnIcon} ${favorite ? styles.favoriteButtonActive : ""}`}
+          onClick={() => void changeFavorite()}
+          disabled={isUpdating}
+          aria-label={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+          aria-busy={isUpdating}
+          title={favoriteError ?? undefined}
+        >
+          <svg className={`${styles.trackPlay__likeSvg} ${favorite ? styles.favoriteActive : ""}`}>
             <use href="/img/icon/sprite.svg#icon-like" />
           </svg>
-        </div>
+         <span className={styles.favoriteCount}>{likesCount}</span>
+        </button>
         <div className={`${styles.trackPlay__dislike} ${styles.btnIcon}`}>
           <svg className={styles.trackPlay__dislikeSvg}>
             <use href="/img/icon/sprite.svg#icon-dislike" />
           </svg>
         </div>
       </div>
+       {favoriteError && (
+        <p className={styles.favoriteError} role="alert">
+          {favoriteError}
+        </p>
+      )}
     </div>
   );
 }

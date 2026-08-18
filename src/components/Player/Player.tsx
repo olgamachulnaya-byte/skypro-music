@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Track } from "@/data";
 import PlayerControls from "./PlayerControls/PlayerControls";
@@ -25,10 +25,14 @@ export default function Player() {
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffledPlaylist, setShuffledPlaylist] = useState<Track[]>([]);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const activePlaylist = isShuffling ? shuffledPlaylist : currentPlaylist;
   const currentIndex = useMemo(
-    () => activePlaylist.findIndex((track) => track._id === currentTrack?._id),
+    () =>
+      activePlaylist.findIndex(
+        (track) => String(track._id) === String(currentTrack?._id),
+      ),
     [activePlaylist, currentTrack?._id],
   );
   const canGoPrevious = currentIndex > 0;
@@ -41,10 +45,9 @@ export default function Player() {
 
     if (isPlaying) {
       void audio.play().catch((error: unknown) => {
-        // Changing tracks can abort an earlier play request. That is expected and
-        // must not pause the newly selected track.
         if (!(error instanceof DOMException && error.name === "AbortError")) {
           dispatch(setIsPlaying(false));
+          setPlaybackError("Не удалось воспроизвести трек");
         }
       });
     } else {
@@ -56,20 +59,21 @@ export default function Player() {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [currentTrack, volume]);
 
-  const togglePlaying = () => {
+  const togglePlaying = useCallback(() => {
     if (currentTrack) dispatch(setIsPlaying(!isPlaying));
-  };
+  }, [currentTrack, dispatch, isPlaying]);
 
-  const selectAdjacentTrack = (direction: -1 | 1) => {
+ const selectAdjacentTrack = useCallback((direction: -1 | 1) => {
     const nextTrack = activePlaylist[currentIndex + direction];
     if (!nextTrack) return false;
 
     dispatch(setCurrentTrack(nextTrack));
     dispatch(setIsPlaying(true));
+    setPlaybackError(null);
     return true;
-  };
+  }, [activePlaylist, currentIndex, dispatch]);
 
-  const toggleShuffle = () => {
+  const toggleShuffle = useCallback(() => {
     if (isShuffling) {
       setIsShuffling(false);
       setShuffledPlaylist([]);
@@ -92,25 +96,35 @@ export default function Player() {
       currentTrack ? [currentTrack, ...remainingTracks] : remainingTracks,
     );
     setIsShuffling(true);
-  };
+  }, [currentPlaylist, currentTrack, isShuffling]);
 
-  const seek = (value: number) => {
+  const seek = useCallback((value: number) => {
     if (audioRef.current) audioRef.current.currentTime = value;
     setCurrentTime(value);
-  };
+  }, []);
 
-  const changeVolume = (value: number) => {
+  const changeVolume = useCallback((value: number) => {
     if (audioRef.current) audioRef.current.volume = value;
     setVolume(value);
-  };
+  }, []);
 
-  const syncPlayingState = (playing: boolean) => {
+  const syncPlayingState = useCallback((playing: boolean) => {
     if (playing !== isPlaying) dispatch(setIsPlaying(playing));
-  };
+  }, [dispatch, isPlaying]);
 
-  const handleEnded = () => {
+  const handleEnded = useCallback(() => {
     if (!selectAdjacentTrack(1)) dispatch(setIsPlaying(false));
-  };
+  }, [dispatch, selectAdjacentTrack]);
+
+  const selectPreviousTrack = useCallback(() => {
+    selectAdjacentTrack(-1);
+  }, [selectAdjacentTrack]);
+  const selectNextTrack = useCallback(() => {
+    selectAdjacentTrack(1);
+  }, [selectAdjacentTrack]);
+  const toggleLoop = useCallback(() => {
+    setIsLooping((value) => !value);
+  }, []);
 
   if (!currentTrack) return null;
 
@@ -124,6 +138,7 @@ export default function Player() {
         onLoadStart={() => {
           setCurrentTime(0);
           setDuration(currentTrack.duration_in_seconds);
+          setPlaybackError(null);
         }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
         onLoadedMetadata={(event) => {
@@ -136,13 +151,21 @@ export default function Player() {
         }}
         onPlay={() => syncPlayingState(true)}
         onPause={() => syncPlayingState(false)}
-        onError={() => syncPlayingState(false)}
+        onError={() => {
+          syncPlayingState(false);
+          setPlaybackError("Не удалось загрузить аудиофайл");
+        }}
         onEnded={handleEnded}
       />
       <div className={styles.bar__content}>
         <div className={styles.bar__time} aria-live="off">
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
+         {playbackError && (
+          <p className={styles.bar__error} role="alert">
+            {playbackError}
+          </p>
+        )}
         <input
           className={styles.bar__playerProgress}
           type="range"
@@ -163,9 +186,9 @@ export default function Player() {
               canGoPrevious={canGoPrevious}
               canGoNext={canGoNext}
               onTogglePlaying={togglePlaying}
-              onPrevious={() => selectAdjacentTrack(-1)}
-              onNext={() => selectAdjacentTrack(1)}
-              onToggleLoop={() => setIsLooping((value) => !value)}
+              onPrevious={selectPreviousTrack}
+              onNext={selectNextTrack}
+              onToggleLoop={toggleLoop}
               onToggleShuffle={toggleShuffle}
             />
             <TrackInfo track={currentTrack} />

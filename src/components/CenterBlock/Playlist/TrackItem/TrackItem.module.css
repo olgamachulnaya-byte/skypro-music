@@ -116,18 +116,6 @@
   stroke: #696969;
 }
 
-.favoriteButton {
-  padding: 8px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.favoriteActive {
-  fill: #ad61ff;
-  stroke: #ad61ff;
-}
-
 .track__timeText {
   font-style: normal;
   font-weight: 400;
@@ -135,4 +123,65 @@
   line-height: 24px;
   text-align: right;
   color: #696969;
+}
+
+.favoriteButton {
+  display: inline-flex;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  color: #696969;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.favoriteButton:hover {
+  color: #acacac;
+  transform: scale(1.08);
+}
+
+.favoriteButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+  transform: none;
+}
+
+.favoriteButtonActive {
+  color: #ad61ff;
+  animation: favorite-pop 0.25s ease;
+}
+
+.favoriteActive {
+  fill: #ad61ff;
+  stroke: #ad61ff;
+}
+
+.favoriteCount {
+  min-width: 1ch;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.favoriteError {
+  max-width: 180px;
+  margin-right: 8px;
+  color: #ff6b6b;
+  font-size: 12px;
+  line-height: 14px;
+  text-align: right;
+}
+@keyframes favorite-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }

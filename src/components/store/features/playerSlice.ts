@@ -1,4 +1,5 @@
 import type { Track } from "../../../data";
+import { updateTrackFavoriteState } from "@/lib/favorites";
 
 export interface PlayerState {
   currentTrack: Track | null;
@@ -18,6 +19,10 @@ export type PlayerAction =
   | { type: "player/setCurrentTrack"; payload: Track }
   | { type: "player/setCurrentPlaylist"; payload: Track[] }
   | { type: "player/setCatalogTracks"; payload: Track[] }
+  | {
+      type: "player/updateFavorite";
+      payload: { trackId: string | number; userId: string; favorite: boolean };
+    }
   | { type: "player/setIsPlaying"; payload: boolean };
 
 export const setCurrentTrack = (track: Track): PlayerAction => ({
@@ -40,6 +45,15 @@ export const setIsPlaying = (isPlaying: boolean): PlayerAction => ({
   payload: isPlaying,
 });
 
+export const updateFavorite = (
+  trackId: string | number,
+  userId: string,
+  favorite: boolean,
+): PlayerAction => ({
+  type: "player/updateFavorite",
+  payload: { trackId, userId, favorite },
+});
+
 export function playerReducer(
   state: PlayerState,
   action: PlayerAction,
@@ -51,6 +65,28 @@ export function playerReducer(
       return { ...state, currentPlaylist: action.payload };
    case "player/setCatalogTracks":
       return { ...state, catalogTracks: action.payload };
+      case "player/updateFavorite": {
+      const matchesTrack = (track: Track) =>
+        String(track._id) === String(action.payload.trackId);
+      const updateTrack = (track: Track) =>
+        matchesTrack(track)
+          ? updateTrackFavoriteState(
+              track,
+              action.payload.userId,
+              action.payload.favorite,
+            )
+          : track;
+
+      return {
+        ...state,
+        currentTrack:
+          state.currentTrack && matchesTrack(state.currentTrack)
+            ? updateTrack(state.currentTrack)
+            : state.currentTrack,
+        currentPlaylist: state.currentPlaylist.map(updateTrack),
+        catalogTracks: state.catalogTracks.map(updateTrack),
+      };
+    }
     case "player/setIsPlaying":
       return { ...state, isPlaying: action.payload };
     default:

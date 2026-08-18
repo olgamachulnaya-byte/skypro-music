@@ -3,9 +3,14 @@
 import { useMemo, useState } from "react";
 import classNames from "classnames";
 import type { Track } from "@/data";
+import {
+  countActiveFilters,
+  getUniqueOptions,
+  type TrackFilters,
+} from "../filterTracks";
 import styles from "./Filter.module.css";
 
-type FilterName = "author" | "year" | "genre";
+type FilterName = "author" | "dateSort" | "genre";
 
 interface FilterConfig {
   name: FilterName;
@@ -13,22 +18,10 @@ interface FilterConfig {
   options: readonly string[];
 }
 
-export interface TrackFilters {
-  author: string | null;
-  year: string | null;
-  genre: string | null;
-}
-
 interface FilterProps {
   tracks: Track[];
   value: TrackFilters;
   onChange: (filters: TrackFilters) => void;
-}
-
-function getUniqueOptions(values: readonly string[]): string[] {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort(
-    (firstValue, secondValue) => firstValue.localeCompare(secondValue, "ru"),
-  );
 }
 
 export default function Filter({ tracks, value, onChange }: FilterProps) {
@@ -41,11 +34,9 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
         options: getUniqueOptions(tracks.map((track) => track.author)),
       },
       {
-        name: "year",
+        name: "dateSort",
         label: "году выпуска",
-        options: getUniqueOptions(
-          tracks.map((track) => track.release_date.slice(0, 4)),
-        ),
+        options: ["По умолчанию", "Сначала новые", "Сначала старые"],
       },
       {
         name: "genre",
@@ -55,6 +46,13 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
     ],
     [tracks],
   );
+
+   const optionValue = (name: FilterName, option: string) => {
+    if (name !== "dateSort") return option;
+    if (option === "Сначала новые") return "newest";
+    if (option === "Сначала старые") return "oldest";
+    return "default";
+  };
 
   const toggleFilter = (nameFilter: FilterName): void => {
     setActiveFilter((currentFilter) =>
@@ -77,6 +75,12 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
             aria-controls={`${name}-filter-options`}
           >
             {label}
+            {name !== "dateSort" && value[name] && (
+              <span className={styles.filter__count}>1</span>
+            )}
+            {name === "dateSort" && value.dateSort !== "default" && (
+              <span className={styles.filter__count}>1</span>
+            )}
           </button>
           {activeFilter === name && (
             <ul
@@ -89,13 +93,20 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
                   <button
                     type="button"
                     className={classNames(styles.filter__item, {
-                      [styles.selected]: value[name] === option,
+                      [styles.selected]:
+                        value[name] === optionValue(name, option),
                     })}
-                    aria-pressed={value[name] === option}
+                    aria-pressed={value[name] === optionValue(name, option)}
                     onClick={() => {
+                      const nextValue = optionValue(name, option);
                       onChange({
                         ...value,
-                        [name]: value[name] === option ? null : option,
+                        [name]:
+                          name === "dateSort"
+                            ? nextValue
+                            : value[name] === nextValue
+                              ? null
+                              : nextValue,
                       });
                       setActiveFilter(null);
                     }}
@@ -108,6 +119,17 @@ export default function Filter({ tracks, value, onChange }: FilterProps) {
           )}
         </div>
       ))}
+      {countActiveFilters(value) > 0 && (
+        <button
+          type="button"
+          className={styles.filter__reset}
+          onClick={() =>
+            onChange({ author: null, genre: null, dateSort: "default" })
+          }
+        >
+          Сбросить
+        </button>
+      )}
     </div>
   );
 }

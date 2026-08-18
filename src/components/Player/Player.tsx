@@ -25,10 +25,14 @@ export default function Player() {
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffledPlaylist, setShuffledPlaylist] = useState<Track[]>([]);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const activePlaylist = isShuffling ? shuffledPlaylist : currentPlaylist;
   const currentIndex = useMemo(
-    () => activePlaylist.findIndex((track) => track._id === currentTrack?._id),
+    () =>
+      activePlaylist.findIndex(
+        (track) => String(track._id) === String(currentTrack?._id),
+      ),
     [activePlaylist, currentTrack?._id],
   );
   const canGoPrevious = currentIndex > 0;
@@ -41,10 +45,9 @@ export default function Player() {
 
     if (isPlaying) {
       void audio.play().catch((error: unknown) => {
-        // Changing tracks can abort an earlier play request. That is expected and
-        // must not pause the newly selected track.
         if (!(error instanceof DOMException && error.name === "AbortError")) {
           dispatch(setIsPlaying(false));
+          setPlaybackError("Не удалось воспроизвести трек");
         }
       });
     } else {
@@ -66,6 +69,7 @@ export default function Player() {
 
     dispatch(setCurrentTrack(nextTrack));
     dispatch(setIsPlaying(true));
+    setPlaybackError(null);
     return true;
   }, [activePlaylist, currentIndex, dispatch]);
 
@@ -134,6 +138,7 @@ export default function Player() {
         onLoadStart={() => {
           setCurrentTime(0);
           setDuration(currentTrack.duration_in_seconds);
+          setPlaybackError(null);
         }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
         onLoadedMetadata={(event) => {
@@ -146,13 +151,21 @@ export default function Player() {
         }}
         onPlay={() => syncPlayingState(true)}
         onPause={() => syncPlayingState(false)}
-        onError={() => syncPlayingState(false)}
+        onError={() => {
+          syncPlayingState(false);
+          setPlaybackError("Не удалось загрузить аудиофайл");
+        }}
         onEnded={handleEnded}
       />
       <div className={styles.bar__content}>
         <div className={styles.bar__time} aria-live="off">
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
+         {playbackError && (
+          <p className={styles.bar__error} role="alert">
+            {playbackError}
+          </p>
+        )}
         <input
           className={styles.bar__playerProgress}
           type="range"

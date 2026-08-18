@@ -1,4 +1,4 @@
-import { tracksData, type Track, type TrackUser } from "@/data";
+import type { Track, TrackUser } from "@/data";
 import {
   clearAuthSession,
   getAccessToken,
@@ -288,23 +288,11 @@ function extractTrackList(value: unknown): unknown {
 let tracksRequest: Promise<Track[]> | null = null;
 
 export function getTracks(): Promise<Track[]> {
-  tracksRequest ??= (async () => {
-    try {
-      return parseTrackListResponse(
-        await request<unknown>("/catalog/track/all/"),
-      );
-    } catch {
-      // Keep the catalog usable when the training API is sleeping, unavailable,
-      // or temporarily returns a response from an incompatible API version.
-      return tracksData.map((track) => ({
-        ...track,
-        genre: [...track.genre],
-        stared_user: [...track.stared_user],
-      }));
-    }
-  })().finally(() => {
-    tracksRequest = null;
-  });
+  tracksRequest ??= request<unknown>("/catalog/track/all/")
+    .then(parseTrackListResponse)
+    .finally(() => {
+      tracksRequest = null;
+    });
 
   return tracksRequest;
 }

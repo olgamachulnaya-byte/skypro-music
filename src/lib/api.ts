@@ -1,4 +1,4 @@
-import type { Track, TrackUser } from "@/data";
+import { tracksData, type Track, type TrackUser } from "@/data";
 import {
   clearAuthSession,
   getAccessToken,
@@ -290,6 +290,21 @@ let tracksRequest: Promise<Track[]> | null = null;
 export function getTracks(): Promise<Track[]> {
   tracksRequest ??= request<unknown>("/catalog/track/all/")
     .then(parseTrackListResponse)
+    .catch((error: unknown) => {
+      if (
+        error instanceof ApiError &&
+        error.status === 0 &&
+        error.message === "Сервер вернул некорректный список треков"
+      ) {
+        return tracksData.map((track) => ({
+          ...track,
+          genre: [...track.genre],
+          stared_user: [...track.stared_user],
+        }));
+      }
+
+      throw error;
+    })
     .finally(() => {
       tracksRequest = null;
     });
